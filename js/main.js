@@ -444,7 +444,7 @@ const ws = (() => {
       const ax = (left ? lab.right + 16 : lab.left - 16) - box.left, ay = lab.top + lab.height / 2 - box.top;
       const lane = ax + (left ? 1 : -1) * (16 + k * 16);
       const [tx, ty] = to(...T[n.dataset.note]);
-      return `<g data-for="${n.dataset.note}"><path d="M${f1(ax)} ${f1(ay)}H${f1(lane)}V${f1(ty)}H${f1(tx)}"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="6"/></g>`;
+      return `<g data-for="${n.dataset.note}"><path d="M${f1(ax)} ${f1(ay)}H${f1(lane)}V${f1(ty)}H${f1(tx)}"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="2.5"/></g>`;
     }).join('');
   }
 

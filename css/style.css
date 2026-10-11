@@ -140,9 +140,12 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .ws-crest { grid-column: 4 / 10; grid-row: 1 / 4; align-self: center; justify-self: center; width: min(100%, 58vh); }
 #ws-svg { width: 100%; display: block; overflow: visible; }
 .leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-.leaders path { fill: none; stroke: var(--aobana); stroke-width: 1.5; stroke-linejoin: round; transition: stroke .3s; }
-.leaders circle { fill: var(--cloth); stroke: var(--aobana); stroke-width: 2; transition: stroke .3s; }
-.leaders .hot path, .leaders .hot circle { stroke: var(--kihada); }
+.leaders g { opacity: .5; transition: opacity .3s; }
+.leaders path { fill: none; stroke: var(--aobana); stroke-width: 1; stroke-linejoin: round; transition: stroke .3s; }
+.leaders circle { fill: var(--aobana); transition: fill .3s; }
+.leaders .hot { opacity: 1; }
+.leaders .hot path { stroke: var(--kihada); }
+.leaders .hot circle { fill: var(--kihada); }
 .note { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--s3); }
 .note.l { grid-column: 1 / 4; align-items: flex-end; text-align: right; }
 .note.r { grid-column: 10 / 13; align-items: flex-start; }
