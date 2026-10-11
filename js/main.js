@@ -5,7 +5,8 @@ import { crestMarkup, animateConstruction, crestFile, reduced } from './render.j
 
 const $ = (s, el = document) => el.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
-const [DATA, CREDITS] = await Promise.all([fetch('data/crests.json').then((r) => r.json()), fetch('assets/crests/credits.json').then((r) => r.json())]);
+const V = document.getElementById('kamon-version')?.dataset.v || ''; // see tools/stamp.mjs
+const [DATA, CREDITS] = await Promise.all([fetch(`data/crests.json?v=${V}`).then((r) => r.json()), fetch(`assets/crests/credits.json?v=${V}`).then((r) => r.json())]);
 const BY_KEY = Object.fromEntries(CLANS.map((c) => [c.key, c]));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
