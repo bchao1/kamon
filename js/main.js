@@ -358,19 +358,32 @@ const ws = (() => {
   root.addEventListener('click', (e) => {
     const pick = e.target.closest('[data-pick] button');
     if (pick) return set({ ...spec, [pick.parentElement.dataset.pick === 'enclosure' ? 'enclosure' : pick.parentElement.dataset.pick]: pick.dataset.v });
-    const tk = e.target.closest('.tick');
-    if (tk) return set({ ...spec, [tk.dataset.key]: +tk.dataset.v });
     const st = e.target.closest('[data-step-key]');
     if (st) { const k = st.dataset.stepKey, [d, lo, hi] = STEPS[k]; return set({ ...spec, [k]: +Math.min(hi, Math.max(lo, spec[k] + d * +st.dataset.dir)).toFixed(2) }); }
   });
   root.addEventListener('keydown', (e) => {
     const sl = e.target.closest('[role="slider"]');
-    if (!sl || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    if (!sl || sl.getAttribute('aria-disabled') === 'true' || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
     const k = sl.dataset.key, vals = LADDERS[k], i = nearest(vals, spec[k]);
     const j = e.key === 'Home' ? 0 : e.key === 'End' ? vals.length - 1 : Math.min(vals.length - 1, Math.max(0, i + (['ArrowUp', 'ArrowRight'].includes(e.key) ? 1 : -1)));
     set({ ...spec, [k]: vals[j] });
   });
+  // drag along a ladder (or press anywhere on it) to set the value; the tick nearest the pointer wins
+  let drag = null;
+  const tickAt = (sl, y) => [...sl.querySelectorAll('.tick')].reduce((a, t) => { const r = t.getBoundingClientRect(), d = Math.abs(r.top + r.height / 2 - y); return d < a.d ? { t, d } : a; }, { t: null, d: Infinity }).t;
+  const pull = (sl, y) => { const t = tickAt(sl, y); if (t && +t.dataset.v !== spec[sl.dataset.key]) set({ ...spec, [sl.dataset.key]: +t.dataset.v }); };
+  const hot = (sl, on) => leaders.querySelector(`[data-for="${sl.closest('.note').dataset.note}"]`)?.classList.toggle('hot', on);
+  root.addEventListener('pointerdown', (e) => {
+    const sl = e.target.closest('[role="slider"]');
+    if (!sl || sl.getAttribute('aria-disabled') === 'true' || e.button > 0) return;
+    e.preventDefault(); sl.focus({ preventScroll: true }); sl.setPointerCapture(e.pointerId);
+    drag = sl; sl.classList.add('dragging'); hot(sl, true); pull(sl, e.clientY);
+  });
+  root.addEventListener('pointermove', (e) => { if (drag) pull(drag, e.clientY); });
+  const drop = () => { if (!drag) return; drag.classList.remove('dragging'); hot(drag, false); drag = null; };
+  root.addEventListener('pointerup', drop);
+  root.addEventListener('pointercancel', drop);
   const nearest = (vals, v) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
   sketch.querySelectorAll('.note').forEach((n) => {
     n.addEventListener('mouseenter', () => leaders.querySelector(`[data-for="${n.dataset.note}"]`)?.classList.add('hot'));
@@ -390,14 +403,15 @@ const ws = (() => {
     const show = { n: ring, rows: grid, cols: grid, fixed: !ring && !grid, lobes: spec.enclosure === 'mokko', center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko'].includes(spec.motif) };
     root.querySelectorAll('[data-for]').forEach((el) => { if (el.dataset.for in show) el.hidden = !show[el.dataset.for]; });
     $('[data-for="fixed"]').textContent = `${spec.layout === 'mitsumori' ? 3 : spec.motif === 'none' ? 0 : 1} . set by arrangement`;
-    $('#l-cs').style.opacity = ring && spec.center !== 'none' ? 1 : 0.35;
-    $('#l-r').style.opacity = ring ? 1 : 0.35;
+    // distance and centre size only mean something on a ring (and a ring with a centre): otherwise they rest, greyed
+    const off = { r: !ring, centerSize: !ring || spec.center === 'none' };
+    Object.entries(off).forEach(([k, o]) => { const sl = $(`[role="slider"][data-key="${k}"]`); sl.setAttribute('aria-disabled', o); sl.tabIndex = o ? -1 : 0; });
     $('#o-motif').textContent = MOTIFS[spec.motif]?.en || 'None';
     $('#o-enc').textContent = encName(spec.enclosure);
     $('#o-count').textContent = ring ? spec.n : grid ? `${spec.rows} × ${spec.cols}` : '';
-    $('#o-r').textContent = (+spec.r).toFixed(2);
+    $('#o-r').textContent = off.r ? 'Ring only' : (+spec.r).toFixed(2);
     $('#o-size').textContent = (+spec.size).toFixed(2);
-    $('#o-cs').textContent = (+spec.centerSize).toFixed(2);
+    $('#o-cs').textContent = !ring ? 'Ring only' : spec.center === 'none' ? 'Pick a centre' : (+spec.centerSize).toFixed(2);
     $('#ws-guides').setAttribute('aria-pressed', guides);
   }
 

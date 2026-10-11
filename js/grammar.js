@@ -223,7 +223,7 @@ export function nameOf(spec) {
     const base = spec.motif === 'ume' ? (spec.center === 'ken' || spec.center === 'hoshi' ? ['梅鉢', 'umebachi', 'plum blossom'] : ['梅', 'ume', 'plum blossom']) : ['桔梗', 'kikyō', 'bellflower'];
     jp = spec.n === 5 ? base[0] : `${KANJI[spec.n]}弁${base[0]}`;
     ro = spec.n === 5 ? base[1] : `${COUNT_RO[spec.n]}-ben ${base[1]}`;
-    en = spec.n === 5 ? `A ${base[2]}` : `A ${spec.n}-petalled ${base[2]}`;
+    en = spec.n === 5 ? `A ${base[2]}` : `${[8, 11].includes(spec.n) ? 'An' : 'A'} ${spec.n}-petalled ${base[2]}`;
   } else if (spec.motif === 'hoshi' && spec.layout === 'ring' && spec.center === 'hoshi' && spec.n + 1 >= 5) {
     jp = `${KANJI[spec.n + 1]}曜`; ro = ['', '', '', '', '', 'goyō', 'rokuyō', 'shichiyō', 'hachiyō', 'kuyō', 'jūyō', 'jūichiyō', 'jūniyō', 'jūsan’yō'][spec.n + 1];
     en = `${COUNT_EN[spec.n + 1]} luminaries`;

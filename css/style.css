@@ -162,14 +162,18 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .note.l .ladders { flex-direction: row-reverse; }
 .ladder { display: flex; flex-direction: column; gap: var(--s2); align-items: inherit; }
 .note.l .ladder { align-items: flex-end; }
-.ladder > div { display: flex; flex-direction: column-reverse; align-items: inherit; }
+.ladder > div { display: flex; flex-direction: column-reverse; align-items: inherit; padding: var(--s2) 0; cursor: ns-resize; touch-action: none; user-select: none; }
+.ladder > div[aria-disabled='true'] { opacity: .35; cursor: default; }
+.ladder > div:focus-visible { outline: none; }
+.ladder > div:focus-visible .tick.cur span, .ladder > .dragging .tick.cur span { width: 44px; }
 .ladder small { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
 .tick { height: 8px; width: 44px; display: flex; align-items: center; }
 .note.l .tick { justify-content: flex-end; }
 .tick span { height: 2px; width: 10px; background: var(--dim); transition: width .35s var(--spring), background .3s; }
 .tick.filled span { width: 18px; background: var(--shiro); }
 .tick.cur span { width: 34px; background: var(--kihada); }
-.tick:hover span { width: 26px; }
+.ladder > div:not([aria-disabled='true']) .tick:hover span { width: 26px; }
+.tick { pointer-events: none; }
 .fixed { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
 
 .shelf { grid-column: 1 / -1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s4) var(--s5); }
@@ -184,7 +188,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .stepper button:hover { color: var(--shiro); }
 .stepper svg { width: 24px; height: 24px; display: block; }
 .stepper svg path { fill: var(--shiro); }
-.actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--s4); align-items: center; padding-bottom: var(--s2); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.actions { margin-left: auto; display: flex; flex-direction: column; gap: var(--s2); align-items: flex-end; text-align: right; padding-bottom: var(--s1); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .actions button { transition: color .3s; }
 .actions button:hover { color: var(--kihada); }
 .actions .primary { color: var(--kihada); }
@@ -242,6 +246,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
   .note.l .ladder { align-items: flex-start; }
   .leaders { display: none; }
   .credit, .sign { justify-self: start; }
+  .actions { margin-left: 0; align-items: flex-start; text-align: left; }
 }
 @media (max-width: 1100px) {
   .weave .row { grid-template-columns: repeat(8, minmax(0, 1fr)); }
