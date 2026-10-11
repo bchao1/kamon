@@ -453,7 +453,7 @@ function weave() {
   const el = $('#weave'), n = 12;
   const specs = Array.from({ length: n * 2 }, (_, i) => randomSpec(seed + i * 7919));
   const row = (r) => `<div class="row">${specs.slice(r * n, r * n + n).map((s, i) => `<span class="cell" style="--d:${(i + r * 3) * 45}ms;transform:rotate(${spins * 360}deg)" data-i="${r * n + i}">${weaveCell(s)}</span>`).join('')}</div>`;
-  el.innerHTML = row(0) + '<button type="button" class="again" aria-label="Deal new crests" title="Again"><span></span></button>' + row(1);
+  el.innerHTML = row(0) + '<button type="button" class="again" aria-label="Draw new crests"><span></span><b>Draw again</b><i></i></button>' + row(1);
   el.querySelector('.again').onclick = again;
   el.onclick = (e) => {
     const t = e.target.closest('.turn'); if (!t) return;

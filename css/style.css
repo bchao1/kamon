@@ -199,9 +199,11 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .turn { display: block; width: 52px; height: 52px; }
 .turn svg { width: 100%; height: 100%; display: block; overflow: visible; transition: transform .9s cubic-bezier(.65, 0, .35, 1); }
 .turn:hover svg, .turn:focus-visible svg { transform: rotate(var(--deg)); transition: transform 1.15s var(--spring); }
-.again { width: 96px; height: 24px; display: flex; align-items: center; justify-content: center; }
-.again span { display: block; width: 24px; height: 3px; background: var(--kihada); transition: width .45s var(--spring), background-color .3s; }
-.again:hover span, .again:focus-visible span { width: 64px; background: var(--shiro); }
+.again { height: 32px; padding: 0 var(--s2); display: flex; align-items: center; gap: var(--s3); color: var(--kihada); transition: color .3s; }
+.again span, .again i { display: block; width: 32px; height: 3px; background: currentColor; transition: width .45s var(--spring); }
+.again b { font-weight: 500; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+.again:hover, .again:focus-visible { color: var(--shiro); }
+.again:hover span, .again:hover i, .again:focus-visible span, .again:focus-visible i { width: 56px; }
 .credit { grid-column: 1 / 7; font-size: 11px; line-height: 1.8; color: var(--mute); align-self: end; }
 .credit a { color: var(--soft); text-decoration: underline; text-decoration-color: var(--aobana); text-underline-offset: 3px; }
 .sign { grid-column: 10 / 13; justify-self: end; align-self: end; display: flex; align-items: baseline; gap: var(--s2); }
@@ -239,6 +241,6 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   html.js [data-reveal] { opacity: 1; transform: none; transition: none; }
-  .tile, .row-label, .weave .cell, .turn svg, .tick span, .again span { transition: none !important; }
+  .tile, .row-label, .weave .cell, .turn svg, .tick span, .again span, .again i { transition: none !important; }
   .turn:hover svg { transform: none; }
 }
