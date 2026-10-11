@@ -51,21 +51,47 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .guides { fill: none; stroke: var(--aobana); stroke-width: 3.2; opacity: .75; }
 .guides .dot { fill: var(--aobana); stroke: none; }
 
-/* ---------- hero (unchanged in layout; set in the system's type) ---------- */
-.hero { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; gap: var(--s6); padding: var(--page) var(--m); }
-.hero-type { display: flex; gap: var(--s5); align-items: flex-start; }
-.hero-kanji { font-size: clamp(90px, 13vw, 190px); line-height: 1; letter-spacing: .06em; }
-.hero h1 { font-size: clamp(28px, 3.2vw, 44px); font-weight: 500; line-height: 1.15; letter-spacing: .04em; text-transform: uppercase; max-width: 10ch; margin-top: var(--s3); }
-.lede { font-size: 15px; line-height: 1.75; max-width: 32ch; color: var(--soft); margin: var(--s4) 0 var(--s5); }
-.hero-nav { display: flex; flex-wrap: wrap; gap: var(--s4); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
-.hero-nav a { color: var(--soft); transition: color .3s; }
-.hero-nav a::after { content: '→'; margin-left: var(--s2); color: var(--kihada); display: inline-block; transition: transform .4s var(--spring); }
+/* ---------- hero: S6, on the centre axis ----------
+   家紋 hangs from the top margin on the centre line; the words sit in columns 3–5 set to its left, the menu in
+   column 8 to its right; the crest rises from below. With motion, the hero is pinned for one screen of scroll while
+   the crest rises into full view (and turns one step of its symmetry), then it is dealt into the twenty houses. */
+.hero-track { position: relative; }
+html.hero-motion .hero-track { height: 200vh; }
+.hero { position: relative; height: 100vh; min-height: 640px; overflow: hidden;
+  --col: calc((100% - 2 * var(--m) - 11 * var(--gut)) / 12); --step: calc(var(--col) + var(--gut)); --cs: min(48.6vw, 78vh); }
+html.hero-motion .hero { position: sticky; top: 0; }
+.hero-kanji { position: absolute; left: 50%; top: var(--s7); transform: translateX(-50%); font-size: clamp(88px, 8.33vw, 120px); line-height: 1; letter-spacing: .06em; }
+.hero-words { position: absolute; left: calc(var(--m) + 2 * var(--step)); width: calc(3 * var(--col) + 2 * var(--gut)); top: calc(var(--s7) + 128px); text-align: right; }
+.hero h1 { font-size: 28px; font-weight: 500; line-height: 1.15; letter-spacing: .04em; text-transform: uppercase; }
+.lede { font-size: 13px; line-height: 1.75; color: var(--soft); margin-top: var(--s4); }
+.hero-nav { position: absolute; left: calc(var(--m) + 7 * var(--step)); top: calc(var(--s7) + 128px); display: flex; gap: var(--s4); align-items: flex-start; }
+.hero-nav a { display: flex; flex-direction: row-reverse; gap: var(--s1); align-items: flex-start; color: var(--mute); transition: color .3s; }
 .hero-nav a:hover { color: var(--shiro); }
-.hero-nav a:hover::after { transform: translateX(4px); }
-.hero-crest { margin: 0; justify-self: center; width: min(46vw, 78vh); }
-.hero-crest svg { width: 100%; display: block; overflow: visible; }
-.hero-crest figcaption { margin-top: var(--s3); text-align: center; color: var(--mute); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; min-height: 1.6em; }
-.hero-crest figcaption b { font: 400 18px var(--yuji); color: var(--shiro); letter-spacing: .06em; text-transform: none; margin-right: var(--s2); }
+.hero-nav span { writing-mode: vertical-rl; text-orientation: upright; font: 18px/1 var(--yuji); letter-spacing: .1em; }
+.hero-nav small { writing-mode: vertical-rl; font-size: 10px; line-height: 1; letter-spacing: .14em; text-transform: uppercase; padding-top: 2px; }
+.hero-crest { position: absolute; left: calc(50% - var(--cs) / 2); top: 52%; width: var(--cs); aspect-ratio: 1; margin: 0; pointer-events: none; }
+html.hero-motion .hero-crest { position: fixed; left: 0; top: 0; z-index: 30; will-change: transform; }
+.hero-crest svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.hero-crest .traced { opacity: 0; }
+.hero-cap { position: absolute; right: var(--m); bottom: var(--s6); width: calc(3 * var(--col) + 2 * var(--gut)); text-align: right; color: var(--mute); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.hero-cap b { font: 400 18px var(--yuji); color: var(--shiro); letter-spacing: .06em; text-transform: none; margin-right: var(--s2); }
+.cue { position: absolute; left: var(--m); bottom: var(--s6); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.board.dealing .tile { transition: transform .9s var(--ease), width .9s var(--ease); }
+
+/* ---------- Taken apart: a sheet from the right ---------- */
+#anatomy.sheet { position: fixed; top: 0; right: 0; bottom: 0; left: var(--s6); z-index: 40; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--s6) var(--m); transform: translateX(100%); transition: transform .7s var(--ease); }
+#anatomy.sheet.open { transform: none; }
+#anatomy.sheet.instant { transition: none; }
+.sheet-back { position: absolute; left: var(--m); top: var(--s5); display: flex; align-items: baseline; gap: var(--s2); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); transition: color .3s; }
+.sheet-back span:first-child { color: var(--kihada); display: inline-block; transition: transform .4s var(--spring); }
+.sheet-back span[lang='ja'] { font: 18px var(--yuji); letter-spacing: .1em; text-transform: none; color: var(--shiro); }
+.sheet-back:hover { color: var(--shiro); }
+.sheet-back:hover span:first-child { transform: translateX(-4px); }
+.scrim { position: fixed; inset: 0; z-index: 39; background: rgba(6, 12, 28, .62); opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }
+.scrim.on { opacity: 1; pointer-events: auto; }
+html.sheet-open { overflow: hidden; }
+::view-transition-group(sheet) { animation-duration: .7s; animation-timing-function: var(--ease); }
 
 /* ---------- framed sections: one 12-column grid ---------- */
 .frame { min-height: 100vh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: var(--gut); row-gap: var(--s5); padding: var(--page) var(--m); position: relative; }
@@ -230,8 +256,13 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 
 /* ---------- narrower screens: the columns stack ---------- */
 @media (max-width: 1100px) {
-  .hero { grid-template-columns: 1fr; }
-  .hero-crest { width: min(86vw, 70vh); }
+  .hero { height: auto; min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: var(--s5); padding: var(--s6) var(--m); text-align: center; }
+  .hero > * { position: static !important; transform: none !important; left: auto; width: auto; }
+  .hero-words { text-align: center; max-width: 36ch; }
+  .hero > .hero-crest { position: relative !important; width: min(56vw, 40vh); margin: var(--s7) 0 var(--s6); }
+  .hero-cap { text-align: center; }
+  .cue { display: none; }
+  #anatomy.sheet { left: 0; }
   .frame { grid-template-rows: none; row-gap: var(--s4); }
   .frame > *, .ws-sketch > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .g-left, .g-right { justify-self: center; }
@@ -252,7 +283,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
   .leaders { display: none; }
   .credit, .sign { justify-self: start; }
   .shelf { flex-direction: column; align-items: flex-start; }
-  .controls { grid-template-columns: repeat(2, max-content); }
+  .controls { grid-template-columns: repeat(auto-fill, minmax(140px, max-content)); }
   .actions { align-items: flex-start; text-align: left; }
 }
 @media (max-width: 1100px) {

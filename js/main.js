@@ -56,21 +56,74 @@ function morph(fromEl, toEl, update) {
   vt.finished.finally(() => { toEl.style.viewTransitionName = ''; });
 }
 
-// ================= HERO (as it was) =================
-async function hero() {
-  const svg = $('#hero-svg'), cap = $('#hero-cap');
-  const seq = ['hosokawa', 'akechi', 'chosokabe', 'tokugawa', 'maeda', 'takeda', 'sanada', 'mori'].map((k) => BY_KEY[k]);
-  for (let i = 0; ; i = (i + 1) % seq.length) {
-    const c = seq[i];
-    svg.innerHTML = crestMarkup(c.recipe, { guides: true });
-    cap.innerHTML = `<b lang="ja">${c.mon}</b>${c.monEn}, the ${c.houseEn} crest`;
-    await animateConstruction(svg, { speed: 1, keepGuides: 0.18 });
-    if (reduced) return;
-    await sleep(2600);
-    await svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' }).finished;
-    svg.getAnimations().forEach((a) => a.cancel());
-  }
+// ================= HERO =================
+// S6: the Oda crest draws itself once, low on the centre line. Scrolling pins the hero for one screen while the crest
+// rises into full view, turning one step of its own symmetry (72°), and the words step aside. Scrolling on, the
+// crest shrinks into its place among the twenty houses and the other nineteen are dealt out from it, nearest first.
+const HERO = BY_KEY.oda;
+const heroMotion = !reduced && matchMedia('(min-width: 1101px)');
+const lerp = (a, b, t) => a + (b - a) * t, clamp01 = (t) => Math.min(1, Math.max(0, t));
+const easeHero = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+function hero() {
+  const svg = $('#hero-svg');
+  svg.innerHTML = crestMarkup(HERO.recipe, { guides: true });
+  $('#hero-traced').innerHTML = crestPath(HERO);
+  $('#hero-cap').innerHTML = `<b lang="ja">${HERO.mon}</b>${HERO.monEn}, the ${HERO.houseEn} crest`;
+  animateConstruction(svg, { speed: 1, keepGuides: 0.18 });
 }
+(() => {
+  const track = $('.hero-track'), fig = $('.hero-crest'), built = $('#hero-svg'), traced = $('#hero-traced'), gallery = $('#gallery');
+  const words = $('.hero-words'), late = [$('.hero-kanji'), $('.hero-nav')], cue = $('.cue');
+  let on = false, queued = false;
+  const centre = (el) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; };
+  const aside = (el, t) => { el.style.opacity = 1 - t; el.style.translate = `0 ${(-96 * t).toFixed(1)}px`; };
+  function frame() {
+    queued = false;
+    const vh = innerHeight, vw = document.documentElement.clientWidth, y = scrollY;
+    const pinEnd = track.offsetTop + track.offsetHeight - vh;
+    const p = clamp01((y - track.offsetTop) / (pinEnd - track.offsetTop));
+    const q = clamp01((y - pinEnd) / Math.max(1, gallery.offsetTop - pinEnd));
+    // the rise
+    aside(words, easeHero(clamp01(p / 0.6)));
+    late.forEach((el) => aside(el, easeHero(clamp01((p - 0.07) / 0.6))));
+    cue.style.opacity = 1 - clamp01(p / 0.13);
+    const cs = Math.min(vw * 0.486, vh * 0.78), a = easeHero(p);
+    let cx = vw / 2, cy = lerp(0.52 * vh + cs / 2, vh / 2, a), size = cs, rot = 72 * a;
+    // the deal: the crest lands on its own tile; the others fly out from under it
+    const tiles = [...$('#board').querySelectorAll('.tile')], home = tiles.find((t) => t.dataset.key === HERO.key);
+    const [hx, hy, hw] = centre(home.querySelector('svg'));
+    if (q > 0) { const t = easeHero(q); cx = lerp(cx, hx, t); cy = lerp(cy, hy, t); size = lerp(cs, hw, t); rot = 72 + 72 * t; }
+    fig.style.width = `${size}px`;
+    fig.style.transform = `translate(${(cx - size / 2).toFixed(1)}px, ${(cy - size / 2).toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
+    fig.style.visibility = q >= 1 ? 'hidden' : '';
+    built.style.opacity = 1 - clamp01(q * 1.6);
+    traced.style.opacity = clamp01(q * 1.6 - 0.3);
+    home.style.opacity = q >= 1 ? '' : 0;
+    $('#board').classList.toggle('dealing', q < 1);
+    const order = tiles.filter((t) => t !== home).map((t) => { const [x, y0] = centre(t.querySelector('svg')); const dx = +(t._dx || 0), dy = +(t._dy || 0); return { t, bx: x - dx, by: y0 - dy }; })
+      .sort((m, n) => Math.hypot(m.bx - hx, m.by - hy) - Math.hypot(n.bx - hx, n.by - hy));
+    order.forEach(({ t, bx, by }, k) => {
+      const e = easeHero(clamp01((q - 0.3 * (k / order.length)) / 0.7));
+      if (e >= 1) { t.style.translate = t.style.scale = t.style.opacity = ''; t._dx = t._dy = 0; return; }
+      t._dx = (cx - bx) * (1 - e); t._dy = (cy - by) * (1 - e);
+      t.style.translate = `${t._dx.toFixed(1)}px ${t._dy.toFixed(1)}px`;
+      t.style.scale = lerp(0.3, 1, e).toFixed(3);
+      t.style.opacity = e.toFixed(3);
+    });
+  }
+  const queue = () => { if (on && !queued) { queued = true; requestAnimationFrame(frame); } };
+  const reset = () => {
+    [words, ...late, cue, fig, built, traced].forEach((el) => el.removeAttribute('style'));
+    $('#board').querySelectorAll('.tile').forEach((t) => { t.style.translate = t.style.scale = t.style.opacity = ''; t._dx = t._dy = 0; });
+    $('#board').classList.remove('dealing');
+  };
+  const toggle = () => { on = !!heroMotion && heroMotion.matches; document.documentElement.classList.toggle('hero-motion', on); if (on) queue(); else reset(); };
+  addEventListener('scroll', queue, { passive: true });
+  addEventListener('resize', queue);
+  heroMotion && heroMotion.addEventListener('change', toggle);
+  toggle();
+  window.__heroFrame = queue;
+})();
 
 // ================= TWENTY HOUSES =================
 const board = $('#board');
@@ -150,11 +203,36 @@ function layout() {
 const stage = $('#stage');
 let step = 'whole', cur = null, quietDraw = false, storyTimer = 0;
 const GROUP_COLORS = ['var(--g0)', 'var(--g1)', 'var(--g2)', 'var(--g3)', 'var(--g4)', 'var(--g5)'];
-function goToHouse(key, fromEl) {
-  const anatomy = $('#anatomy');
-  if (!document.startViewTransition || reduced) { openAnatomy(key); anatomy.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); return; }
-  morph(fromEl, stage, () => { quietDraw = true; openAnatomy(key); quietDraw = false; anatomy.scrollIntoView({ behavior: 'instant', block: 'start' }); });
+// Taken apart is a sheet that slides in from the right over the twenty houses, so the scroll stays
+// houses → workshop. The picked crest flies from its tile to the stage; closing flies it home.
+const sheet = $('#anatomy'), scrim = $('#scrim');
+let returnTo = null;
+function setSheet(open) {
+  sheet.classList.toggle('open', open); scrim.classList.toggle('on', open);
+  document.documentElement.classList.toggle('sheet-open', open);
+  sheet.inert = !open;
+  document.querySelectorAll('body > header, body > main, body > footer').forEach((el) => { el.inert = open; });
+  if (open) sheet.scrollTop = 0;
 }
+function sheetMove(fromEl, toEl, update, done) {
+  if (!document.startViewTransition || reduced) { update(); done(); return; }
+  sheet.classList.add('instant'); sheet.style.viewTransitionName = 'sheet';
+  if (fromEl) fromEl.style.viewTransitionName = 'crest';
+  const vt = document.startViewTransition(() => { if (fromEl) fromEl.style.viewTransitionName = ''; update(); if (fromEl && toEl) toEl.style.viewTransitionName = 'crest'; });
+  vt.finished.finally(() => { if (toEl) toEl.style.viewTransitionName = ''; sheet.style.viewTransitionName = ''; sheet.classList.remove('instant'); done(); });
+}
+function goToHouse(key, fromEl) {
+  returnTo = fromEl?.closest('button') || null;
+  sheetMove(fromEl, stage, () => { quietDraw = !!document.startViewTransition && !reduced; openAnatomy(key); quietDraw = false; setSheet(true); }, () => $('#a-close').focus({ preventScroll: true }));
+}
+function closeSheet(after) {
+  if (!sheet.classList.contains('open')) { after?.(); return; }
+  const tile = board.querySelector(`.tile[data-key="${active}"]`), svg = tile && !tile.classList.contains('gone') && tile.getBoundingClientRect().top < innerHeight && tile.getBoundingClientRect().bottom > 0 ? tile.querySelector('svg') : null;
+  sheetMove(svg ? stage : null, svg, () => setSheet(false), () => { (tile || returnTo)?.focus({ preventScroll: true }); after?.(); });
+}
+$('#a-close').onclick = () => closeSheet();
+scrim.onclick = () => closeSheet();
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet.classList.contains('open')) closeSheet(); });
 function openAnatomy(key) {
   active = key; cur = BY_KEY[key];
   board.querySelectorAll('.tile').forEach((t) => t.classList.toggle('active', t.dataset.key === key));
@@ -199,7 +277,6 @@ $('#a-name').onclick = () => unfoldStory();
 [['#a-facts-btn', '#a-facts', 'Facts'], ['#a-source-btn', '#a-source', 'Source']].forEach(([b, p, name]) => {
   $(b).onclick = () => { const open = $(p).hidden; $(p).hidden = !open; $(b).setAttribute('aria-expanded', open); $(b).textContent = `${open ? '−' : '+'} ${name}`; };
 });
-$('#anatomy').addEventListener('arrive', () => { if (cur) unfoldStory(); });
 
 function groupStats(d) {
   const gs = {};
@@ -303,7 +380,7 @@ function setStep(s, fresh) {
     over.innerHTML = `<g transform="translate(500 500)"><svg x="-500" y="-500" width="1000" height="1000" viewBox="-500 -500 1000 1000" overflow="visible" id="cmp">${crestMarkup(c.recipe, { guides: true })}</svg></g>`;
     animateConstruction($('#cmp', over), { speed: 1.4, keepGuides: 0.35 });
     cap.innerHTML = `Circles and straight lines only; the faint shape is the original. <button id="to-ws" class="text-btn">Open in the workshop</button>`;
-    $('#to-ws').onclick = () => { ws.set({ ...DEFAULT, ...c.recipe }); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 700); };
+    $('#to-ws').onclick = () => { ws.set({ ...DEFAULT, ...c.recipe }); setSheet(false); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 900); };
   }
 }
 $('#steps').onclick = (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setStep(b.dataset.step); };
@@ -551,4 +628,4 @@ quietDraw = true; openAnatomy('oda'); quietDraw = false;
 ws.set({ ...DEFAULT, ...BY_KEY.akechi.recipe, enclosure: 'maru' });
 weave();
 hero();
-window.__kamon = { openAnatomy, setStep, ws, CLANS, layout };
+window.__kamon = { openAnatomy, setStep, ws, CLANS, layout, goToHouse, closeSheet };
