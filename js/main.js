@@ -344,13 +344,14 @@ const ws = (() => {
   $('#l-cs').innerHTML = ladder('centerSize', 'Centre size');
   const icons = (key, label, set, names) => `<div class="grp" data-for="${key}"><span id="k-${key}">${label}</span><div class="icons" data-pick="${key}" role="group" aria-labelledby="k-${key}">${Object.keys(set).map((k) => `<button type="button" data-v="${k}" aria-pressed="false" aria-label="${names[k]}" title="${names[k]}">${icon(set[k])}</button>`).join('')}</div></div>`;
   const stepper = (key, label, extra = '') => `<div class="grp" data-for="${key}"><span>${label}<output data-out="${key}"></output></span><div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${label}: less">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${label}: more">›</button></div></div>`;
-  $('#shelf').innerHTML = [
+  $('#shelf').innerHTML = '<div class="controls">' + [
     icons('layout', 'Arrangement', ICON.layout, LAYOUTS),
     icons('center', 'Centre', ICON.center, { none: 'No centre', hoshi: 'Star', stamen: 'Stamens', ken: 'Sword stamens', same: 'Repeat the motif' }),
     icons('overlay', 'Overlay', ICON.overlay, { none: 'No overlay', juji: 'Cross', ichimonji: 'The character 一', hiki1: 'One bar', hiki2: 'Two bars', hiki3: 'Three bars' }),
     icons('style', 'Style', ICON.style, { hinata: 'Solid (hinata)', kage: 'Outline (kage)' }),
     stepper('rot', 'Turn', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>'),
     stepper('aspect', 'Stretch'), stepper('dy', 'Shift down'), stepper('lobes', 'Quince lobes'),
+  ].join('') + '</div>' + [
     `<div class="actions"><button type="button" class="primary" id="ws-draw">Draw with compass</button><button type="button" id="ws-guides" aria-pressed="false">Guides</button><button type="button" id="ws-random">Surprise me</button><button type="button" id="ws-download">Download SVG</button></div>`,
   ].join('');
   const STEPS = { rot: [15, 0, 180], aspect: [0.05, 0.4, 1.6], dy: [0.02, -0.4, 0.4], lobes: [1, 4, 8] };
@@ -478,14 +479,12 @@ const ws = (() => {
 // ================= FOOTER: A CLOTH OF CRESTS =================
 // Each crest turns by whole steps of its own symmetry, so it lands looking unchanged.
 // The short yellow line between the rows turns the whole cloth in a wave and deals new crests.
-function turnOf(s) {
-  const step = s.layout === 'ring' ? 360 / s.n : s.layout === 'mitsumori' ? 120 : s.layout === 'grid' && s.rows === s.cols ? 90 : s.layout === 'single' && s.motif === 'none' ? 90 : 360;
-  return step * Math.ceil(120 / step);
-}
+const stepOf = (s) => (s.layout === 'ring' ? 360 / s.n : s.layout === 'mitsumori' ? 120 : s.layout === 'grid' && s.rows === s.cols ? 90 : s.layout === 'single' && s.motif === 'none' ? 90 : 360);
+function turnOf(s) { const step = stepOf(s); return step * Math.ceil(120 / step); }
 let seed = 1600, spins = 0;
 function weaveCell(s) {
   const b = build(s);
-  return `<button type="button" class="turn" style="--deg:${turnOf(b.spec)}deg" aria-label="${b.name.en}: open in the workshop"><svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg></button>`;
+  return `<button type="button" class="turn" style="--deg:${turnOf(b.spec)}deg" data-step="${stepOf(b.spec)}" aria-label="${b.name.en}: open in the workshop"><svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg></button>`;
 }
 function weave() {
   // two blocks of two rows on the 12-column grid; narrower screens show 8 or 4 columns (CSS hides the rest)
@@ -502,6 +501,38 @@ function weave() {
   };
   el._specs = specs;
 }
+// The pointer is a wide, soft field: crests near its middle spin fast, those at its edge slowly.
+// Each one speeds up and slows down smoothly, and when the pointer leaves it settles on the next
+// whole step of its own symmetry, so it comes to rest looking unchanged.
+(() => {
+  if (reduced) return;
+  const el = $('#weave'), R = 240, VMAX = 540; // px of reach, degrees per second at the centre
+  let px = null, py = null, raf = 0, last = 0;
+  const state = new WeakMap();
+  const tick = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now;
+    let busy = false;
+    el.querySelectorAll('.turn').forEach((t) => {
+      let st = state.get(t);
+      const r = t.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const d = px == null ? Infinity : Math.hypot(px - cx, py - cy), f = Math.max(0, 1 - d / R);
+      if (!st) { if (!f) return; st = { a: 0, v: 0 }; state.set(t, st); }
+      const want = VMAX * f * f;
+      st.v += (want - st.v) * Math.min(1, dt * (want > st.v ? 3 : 2.2));
+      if (want === 0 && st.v < 30) {
+        const step = +t.dataset.step || 360, goal = Math.ceil(st.a / step - 1e-6) * step;
+        st.a += (goal - st.a) * Math.min(1, dt * 6); st.v = 0;
+        if (Math.abs(goal - st.a) < 0.2) { st.a = goal % 360; state.delete(t); t.firstElementChild.style.transform = ''; return; }
+      } else st.a += st.v * dt;
+      t.firstElementChild.style.transform = `rotate(${st.a.toFixed(2)}deg)`;
+      busy = true;
+    });
+    raf = busy || px != null ? requestAnimationFrame(tick) : 0;
+  };
+  const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+  el.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; px = e.clientX; py = e.clientY; wake(); });
+  el.addEventListener('pointerleave', () => { px = py = null; wake(); });
+})();
 function again() {
   spins += 1;
   const el = $('#weave');
