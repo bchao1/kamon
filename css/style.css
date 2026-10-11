@@ -76,7 +76,6 @@ html.hero-motion .hero-crest { position: fixed; left: 0; top: 0; z-index: 30; wi
 .hero-cap { position: absolute; right: var(--m); bottom: var(--s6); width: calc(3 * var(--col) + 2 * var(--gut)); text-align: right; color: var(--mute); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .hero-cap b { font: 400 18px var(--yuji); color: var(--shiro); letter-spacing: .06em; text-transform: none; margin-right: var(--s2); }
 .cue { position: absolute; left: var(--m); bottom: var(--s6); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
-.board.dealing .tile { transition: transform .9s var(--ease), width .9s var(--ease); }
 
 /* ---------- Taken apart: a sheet from the right ---------- */
 #anatomy.sheet { position: fixed; top: 0; right: 0; bottom: 0; left: var(--s6); z-index: 40; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
@@ -113,7 +112,7 @@ html.sheet-open { overflow: hidden; }
 /* ---------- twenty houses ---------- */
 .g-left { grid-column: 1 / 3; grid-row: 2; align-self: center; }
 .g-right { grid-column: 11 / 13; grid-row: 2; align-self: center; justify-self: end; }
-.g-board { grid-column: 3 / 11; grid-row: 2; position: relative; min-height: 0; }
+.g-board { grid-column: 3 / 11; grid-row: 2; position: relative; min-height: 600px; }
 .board { position: absolute; inset: 0; }
 .tile { position: absolute; top: 0; left: 0; width: var(--t); text-align: center; transition: transform .9s var(--ease), width .9s var(--ease), opacity .6s; }
 .tile svg { width: 100%; display: block; overflow: visible; }

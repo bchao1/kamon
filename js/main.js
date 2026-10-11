@@ -59,7 +59,7 @@ function morph(fromEl, toEl, update) {
 // ================= HERO =================
 // S6: the Oda crest draws itself once, low on the centre line. Scrolling pins the hero for one screen while the crest
 // rises into full view, turning one step of its own symmetry (72°), and the words step aside. Scrolling on, the
-// crest shrinks into its place among the twenty houses and the other nineteen are dealt out from it, nearest first.
+// crest shrinks onto its own tile among the twenty houses and disappears into it.
 const HERO = BY_KEY.oda;
 const heroMotion = !reduced && matchMedia('(min-width: 1101px)');
 const lerp = (a, b, t) => a + (b - a) * t, clamp01 = (t) => Math.min(1, Math.max(0, t));
@@ -89,33 +89,29 @@ function hero() {
     cue.style.opacity = 1 - clamp01(p / 0.13);
     const cs = Math.min(vw * 0.486, vh * 0.78), a = easeHero(p);
     let cx = vw / 2, cy = lerp(0.52 * vh + cs / 2, vh / 2, a), size = cs, rot = 72 * a;
-    // the deal: the crest lands on its own tile; the others fly out from under it
-    const tiles = [...$('#board').querySelectorAll('.tile')], home = tiles.find((t) => t.dataset.key === HERO.key);
-    const [hx, hy, hw] = centre(home.querySelector('svg'));
-    if (q > 0) { const t = easeHero(q); cx = lerp(cx, hx, t); cy = lerp(cy, hy, t); size = lerp(cs, hw, t); rot = 72 + 72 * t; }
+    // the landing: the crest settles onto its own tile, then hands over to it and is gone. Nothing else on the
+    // houses page is touched, so every arrangement works as normal. If its tile isn't showing, it simply fades.
+    const home = $('#board').querySelector(`.tile[data-key="${HERO.key}"]`);
+    const lands = mode === 'grid' && home && !home.classList.contains('gone');
+    let fade = 1;
+    if (q > 0 && lands) {
+      const [hx, hy, hw] = centre(home.querySelector('svg')), t = easeHero(q);
+      cx = lerp(cx, hx, t); cy = lerp(cy, hy, t); size = lerp(cs, hw, t); rot = 72 + 72 * t;
+    } else if (q > 0) fade = 1 - easeHero(q);
     fig.style.width = `${size}px`;
     fig.style.transform = `translate(${(cx - size / 2).toFixed(1)}px, ${(cy - size / 2).toFixed(1)}px) rotate(${rot.toFixed(2)}deg)`;
+    fig.style.opacity = fade;
     fig.style.visibility = q >= 1 ? 'hidden' : '';
-    built.style.opacity = 1 - clamp01(q * 1.6);
-    traced.style.opacity = clamp01(q * 1.6 - 0.3);
-    home.style.opacity = q >= 1 ? '' : 0;
-    $('#board').classList.toggle('dealing', q < 1);
-    const order = tiles.filter((t) => t !== home).map((t) => { const [x, y0] = centre(t.querySelector('svg')); const dx = +(t._dx || 0), dy = +(t._dy || 0); return { t, bx: x - dx, by: y0 - dy }; })
-      .sort((m, n) => Math.hypot(m.bx - hx, m.by - hy) - Math.hypot(n.bx - hx, n.by - hy));
-    order.forEach(({ t, bx, by }, k) => {
-      const e = easeHero(clamp01((q - 0.3 * (k / order.length)) / 0.7));
-      if (e >= 1) { t.style.translate = t.style.scale = t.style.opacity = ''; t._dx = t._dy = 0; return; }
-      t._dx = (cx - bx) * (1 - e); t._dy = (cy - by) * (1 - e);
-      t.style.translate = `${t._dx.toFixed(1)}px ${t._dy.toFixed(1)}px`;
-      t.style.scale = lerp(0.3, 1, e).toFixed(3);
-      t.style.opacity = e.toFixed(3);
-    });
+    built.style.opacity = lands ? 1 - clamp01(q * 1.6) : 1;
+    traced.style.opacity = lands ? clamp01(q * 1.6 - 0.3) : 0;
+    // the swap between flying crest and tile is instant, so it can't be seen
+    if (home && lands && q > 0 && q < 1) { home.style.transition = 'none'; home.style.opacity = 0; }
+    else if (home && home.style.opacity === '0') { home.style.opacity = ''; requestAnimationFrame(() => requestAnimationFrame(() => { home.style.transition = ''; })); }
   }
   const queue = () => { if (on && !queued) { queued = true; requestAnimationFrame(frame); } };
   const reset = () => {
     [words, ...late, cue, fig, built, traced].forEach((el) => el.removeAttribute('style'));
-    $('#board').querySelectorAll('.tile').forEach((t) => { t.style.translate = t.style.scale = t.style.opacity = ''; t._dx = t._dy = 0; });
-    $('#board').classList.remove('dealing');
+    const home = $('#board').querySelector(`.tile[data-key="${HERO.key}"]`); if (home) home.style.opacity = home.style.transition = '';
   };
   const toggle = () => { on = !!heroMotion && heroMotion.matches; document.documentElement.classList.toggle('hero-motion', on); if (on) queue(); else reset(); };
   addEventListener('scroll', queue, { passive: true });
