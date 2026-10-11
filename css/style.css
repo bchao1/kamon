@@ -19,6 +19,7 @@
   --m: clamp(24px, 7.78vw, 112px);   /* page margin: 112 at 1440 */
   --gut: clamp(12px, 1.67vw, 24px);  /* gutter: 24 at 1440 */
   --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px; --s6: 64px; --s7: 112px;
+  --page: clamp(64px, 8.9vw, 128px); /* space above and below each section: 128 at 1440 */
   --ease: cubic-bezier(.6, 0, .2, 1);       /* glide: things that move place */
   --ease-in: cubic-bezier(.2, .7, .2, 1);   /* arrive: things that appear */
   --spring: cubic-bezier(.34, 1.56, .64, 1);/* settle: a little past, then home */
@@ -51,7 +52,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .guides .dot { fill: var(--aobana); stroke: none; }
 
 /* ---------- hero (unchanged in layout; set in the system's type) ---------- */
-.hero { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; gap: var(--s6); padding: var(--s6) var(--m); }
+.hero { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: center; gap: var(--s6); padding: var(--page) var(--m); }
 .hero-type { display: flex; gap: var(--s5); align-items: flex-start; }
 .hero-kanji { font-size: clamp(90px, 13vw, 190px); line-height: 1; letter-spacing: .06em; }
 .hero h1 { font-size: clamp(28px, 3.2vw, 44px); font-weight: 500; line-height: 1.15; letter-spacing: .04em; text-transform: uppercase; max-width: 10ch; margin-top: var(--s3); }
@@ -67,7 +68,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .hero-crest figcaption b { font: 400 18px var(--yuji); color: var(--shiro); letter-spacing: .06em; text-transform: none; margin-right: var(--s2); }
 
 /* ---------- framed sections: one 12-column grid ---------- */
-.frame { min-height: 100vh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: var(--gut); row-gap: var(--s5); padding: var(--s6) var(--m); position: relative; }
+.frame { min-height: 100vh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr) auto; column-gap: var(--gut); row-gap: var(--s5); padding: var(--page) var(--m); position: relative; }
 .ftitle { grid-column: 1 / -1; grid-row: 1; display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: var(--s3); text-align: center; }
 .ftitle [lang='ja'] { font: 30px/1.2 var(--yuji); letter-spacing: .08em; }
 .ftitle .ften { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
@@ -192,7 +193,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .actions [aria-pressed='false'] { color: var(--mute); }
 
 /* ---------- footer: a cloth of crests ---------- */
-.foot { min-height: 0; grid-template-rows: auto auto; row-gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s6); }
+.foot { min-height: 0; grid-template-rows: auto auto; row-gap: var(--s6); padding-top: var(--page); padding-bottom: var(--s6); }
 .weave { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: var(--s4); }
 .weave .row { width: 100%; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gut); row-gap: var(--s4); }
 .weave .cell { display: flex; justify-content: center; transition: transform 1.4s cubic-bezier(.7, 0, .2, 1); transition-delay: var(--d, 0ms); }
@@ -208,6 +209,11 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .sign { grid-column: 10 / 13; justify-self: end; align-self: end; display: flex; align-items: baseline; gap: var(--s2); }
 .sign [lang='ja'] { font: 22px var(--yuji); letter-spacing: .08em; }
 .sign span:last-child { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
+
+/* ---------- preview-only tweak (js/tweak.js) ---------- */
+.tweak { position: fixed; right: var(--s4); top: var(--s4); z-index: 50; display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); background: var(--kachi); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.tweak input { width: 160px; accent-color: var(--kihada); }
+.tweak output { color: var(--shiro); min-width: 4ch; }
 
 /* ---------- shared-element moves between sections ---------- */
 ::view-transition-group(crest) { animation-duration: .8s; animation-timing-function: var(--ease); }
