@@ -269,3 +269,14 @@ html.sheet-open { overflow: hidden; }
   .tile, .row-label, .weave .cell, .turn svg, .again b { transition: none !important; }
   .turn:hover svg { transform: none; }
 }
+
+/* ---------- language switch; Japanese and Chinese body type ---------- */
+/* small mono words, top right, above everything; the current language in yellow like every other current choice */
+.lang-switch { position: fixed; top: var(--s5); right: var(--m); z-index: 50; display: flex; gap: var(--s3); font-size: 11px; letter-spacing: .08em; }
+.lang-switch button { color: var(--mute); transition: color .3s; }
+.lang-switch button:hover { color: var(--shiro); }
+.lang-switch button[aria-pressed='true'] { color: var(--kihada); }
+/* DM Mono has no kana or hanzi: fall back to a plain gothic in the reader's script */
+:root:lang(ja) { --mono: 'DM Mono', 'Zen Kaku Gothic New', ui-monospace, sans-serif; }
+:root:lang(zh-Hant) { --mono: 'DM Mono', 'Noto Sans TC', ui-monospace, sans-serif; --yuji: 'Yuji Syuku', 'Noto Serif TC', 'Hiragino Mincho ProN', serif; }
+:root:lang(ja) body, :root:lang(zh-Hant) body { line-height: 1.9; }

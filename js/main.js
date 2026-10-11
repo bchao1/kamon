@@ -1,5 +1,6 @@
-import { CLANS, MOTIF_LABEL, SIDE_LABEL } from './data.js';
-import { build, MOTIFS, ENCLOSURES, LAYOUTS, CENTERS, OVERLAYS, DEFAULT, randomSpec } from './grammar.js';
+import { CLANS } from './data.js';
+import { t, lang, setLang, onLang, LANGS, clanText, describeZh } from './i18n.js';
+import { build, MOTIFS, ENCLOSURES, DEFAULT, randomSpec, nameCount } from './grammar.js';
 import { crestMarkup, animateConstruction, crestFile, reduced } from './render.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -23,12 +24,12 @@ function symmetryOf(c) {
 }
 for (const c of CLANS) Object.assign(c, { data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
 
-const SYM_GROUPS = [
-  ['none', 'No symmetry', 'Drawn freehand'], ['mirror', 'Mirror', 'Left matches right'], ['r2', '2-fold', 'Same after a half turn'],
-  ['r3', '3-fold', 'Repeats every 120°'], ['r4', '4-fold', 'Repeats every 90°'], ['r5', '5-fold', 'Repeats every 72°'],
-  ['r6', '6-fold', 'Repeats every 60°'], ['r8', '8-fold', 'Repeats every 45°'], ['inf', 'Circle', 'Same at every angle'],
-];
-const symText = (s) => (s.n === Infinity ? 'Same at every angle' : s.n > 1 ? `${s.n}-fold rotation` + (s.axes.length ? `, ${s.axes.length} mirror ${s.axes.length > 1 ? 'axes' : 'axis'}` : '') : s.axes.length ? 'One mirror axis' : 'None');
+const symText = (s) => (s.n === Infinity ? t('symInf') : s.n > 1 ? t('symRot', s.n, s.axes.length) : s.axes.length ? t('symOneMirror') : t('symNone'));
+const LANG_TAG = { en: 'en', ja: 'ja', zh: 'zh-Hant' };
+// a house's name in the reader's language (romanised in English)
+const houseName = (c) => (lang === 'en' ? c.houseEn : lang === 'zh' ? clanText(c).houseZh : c.house);
+// a generated crest's description: English name, Chinese description, or (in Japanese) its proper name
+const crestDesc = (spec, b) => (lang === 'en' ? b.name.en : lang === 'zh' ? describeZh(spec, nameCount(spec)) : '');
 
 // ---------- small svg builders ----------
 // overlap is stretched from its own minimum to 1 so every crest's peaks read clearly
@@ -64,11 +65,12 @@ const HERO = BY_KEY.oda;
 const heroMotion = !reduced && matchMedia('(min-width: 1101px)');
 const lerp = (a, b, t) => a + (b - a) * t, clamp01 = (t) => Math.min(1, Math.max(0, t));
 const easeHero = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const heroCap = () => { $('#hero-cap').innerHTML = t('heroCap', clanText(HERO)).replace('<b>', '<b lang="ja">'); };
 function hero() {
   const svg = $('#hero-svg');
   svg.innerHTML = crestMarkup(HERO.recipe, { guides: true });
   $('#hero-traced').innerHTML = crestPath(HERO);
-  $('#hero-cap').innerHTML = `<b lang="ja">${HERO.mon}</b>${HERO.monEn}, the ${HERO.houseEn} crest`;
+  heroCap();
   animateConstruction(svg, { speed: 1, keepGuides: 0.18 });
 }
 (() => {
@@ -124,23 +126,17 @@ function hero() {
 // ================= TWENTY HOUSES =================
 const board = $('#board');
 let mode = 'grid', active = 'oda';
-const SEKIGAHARA = 'Hideyoshi died in 1598, leaving a five-year-old heir. Tokugawa Ieyasu began to rule alone, and Ishida Mitsunari rallied the Toyotomi loyalists against him. On 21 October 1600 the two armies met at Sekigahara. Defections turned the day, and Ieyasu was shōgun three years later.';
-const MODES = {
-  grid: ['二十の家', 'Twenty houses . 1560–1600', '+ Click a house to take it apart'],
-  symmetry: ['対称', 'By symmetry . how each crest repeats', '+ Click a house to take it apart'],
-  motif: ['紋様', 'By motif . what each crest shows', '+ Click a house to take it apart'],
-  side: ['関ヶ原', 'At Sekigahara . 1600', SEKIGAHARA],
-};
-const SYM_COLS = [['none', 'None', 'freehand'], ['mirror', 'Mirror', 'one fold'], ['r2', '2-fold', '180°'], ['r3', '3-fold', '120°'], ['r4', '4-fold', '90°'], ['r5', '5-fold', '72°'], ['r6', '6-fold', '60°'], ['r8', '8-fold', '45°'], ['inf', 'Circle', 'any angle']];
+const MODE_JP = { grid: '二十の家', symmetry: '対称', motif: '紋様', side: '関ヶ原' };
+const SYM_KEYS = ['none', 'mirror', 'r2', 'r3', 'r4', 'r5', 'r6', 'r8', 'inf'];
 function initBoard() {
   CLANS.forEach((c, i) => {
     const b = document.createElement('button');
     b.className = 'tile'; b.dataset.key = c.key;
-    b.setAttribute('aria-label', `${c.houseEn}: ${c.monEn}`);
-    b.innerHTML = `<svg viewBox="0 0 1000 1000" aria-hidden="true"><g class="crest">${crestPath(c)}</g></svg><span class="lbl"><i>${String(i + 1).padStart(2, '0')}</i>${c.houseEn}</span>`;
+    b.innerHTML = `<svg viewBox="0 0 1000 1000" aria-hidden="true"><g class="crest">${crestPath(c)}</g></svg><span class="lbl"><i>${String(i + 1).padStart(2, '0')}</i><span></span></span>`;
     b.onclick = () => goToHouse(c.key, b.querySelector('svg'));
     board.append(b);
   });
+  relabelTiles();
   document.querySelectorAll('#gallery .vmenu button').forEach((btn) => btn.onclick = () => {
     if (mode === btn.dataset.mode) return;
     mode = btn.dataset.mode;
@@ -151,47 +147,55 @@ function initBoard() {
   });
   new ResizeObserver(() => layout()).observe(board);
 }
+function relabelTiles() {
+  for (const b of board.querySelectorAll('.tile')) {
+    const c = clanText(BY_KEY[b.dataset.key]);
+    b.setAttribute('aria-label', `${houseName(c)}: ${lang === 'en' ? c.monEn : c.mon}`);
+    const name = b.querySelector('.lbl > span');
+    name.textContent = houseName(c); name.lang = LANG_TAG[lang];
+  }
+}
 function layout() {
-  const [jp, en, note] = MODES[mode];
-  $('#g-jp').textContent = jp; $('#g-en').textContent = en;
-  const fn = $('#g-note'); fn.textContent = note; fn.classList.toggle('story-mode', mode === 'side');
+  $('#g-jp').textContent = MODE_JP[mode]; $('#g-en').textContent = t('gTitle')[mode];
+  const fn = $('#g-note'); fn.textContent = mode === 'side' ? t('sekigahara') : t('clickHint'); fn.classList.toggle('story-mode', mode === 'side');
   board.classList.toggle('quiet', mode === 'symmetry' || mode === 'motif');
   board.querySelectorAll('.row-label').forEach((l) => l.remove());
   const W = board.clientWidth, H = board.clientHeight > 240 ? board.clientHeight : 640, lblH = 26;
   const tile = (c) => board.querySelector(`.tile[data-key="${c.key}"]`);
-  const place = (c, x, y, t, gone = false) => { const el = tile(c); el.style.setProperty('--t', `${t}px`); el.style.transform = `translate(${x}px, ${y}px)`; el.classList.toggle('gone', gone); el.tabIndex = gone ? -1 : 0; };
+  const place = (c, x, y, ts, gone = false) => { const el = tile(c); el.style.setProperty('--t', `${ts}px`); el.style.transform = `translate(${x}px, ${y}px)`; el.classList.toggle('gone', gone); el.tabIndex = gone ? -1 : 0; };
   const label = (html, x, y, w) => { const l = document.createElement('div'); l.className = 'row-label'; l.innerHTML = html; l.style.width = `${w}px`; l.style.transform = `translate(${x}px, ${y}px)`; board.append(l); };
   if (mode === 'grid') {
     // five across, read from the right, like a page of a crest book
     const cols = W > 560 ? 5 : W > 400 ? 4 : 3, rows = Math.ceil(CLANS.length / cols), cell = W / cols, gap = 24;
-    const t = Math.max(48, Math.min(cell - 24, (H - rows * (lblH + gap) + gap) / rows, 104));
-    const total = rows * (t + lblH + gap) - gap, y0 = Math.max(0, (H - total) / 2);
-    CLANS.forEach((c, i) => place(c, W - ((i % cols) + 1) * cell + (cell - t) / 2, y0 + Math.floor(i / cols) * (t + lblH + gap), t));
+    const ts = Math.max(48, Math.min(cell - 24, (H - rows * (lblH + gap) + gap) / rows, 104));
+    const total = rows * (ts + lblH + gap) - gap, y0 = Math.max(0, (H - total) / 2);
+    CLANS.forEach((c, i) => place(c, W - ((i % cols) + 1) * cell + (cell - ts) / 2, y0 + Math.floor(i / cols) * (ts + lblH + gap), ts));
   } else if (mode === 'symmetry' || mode === 'motif') {
     // one column per group, right to left, like lines of vertical text
     const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : c.motif);
-    const groups = (mode === 'symmetry' ? SYM_COLS : Object.entries(MOTIF_LABEL).map(([k, v]) => [k, v, ''])).map(([k, name, sub]) => [name, sub, CLANS.filter((c) => keyOf(c) === k)]).filter((g) => g[2].length);
+    const groups = (mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...t('symCols')[k]]) : Object.entries(t('motifGroups')).map(([k, v]) => [k, v, ''])).map(([k, name, sub]) => [name, sub, CLANS.filter((c) => keyOf(c) === k)]).filter((g) => g[2].length);
     const colW = W / groups.length, maxN = Math.max(...groups.map((g) => g[2].length)), labH = 48, vg = 8;
-    const t = Math.max(28, Math.min(colW - 16, (H - labH) / maxN - vg, 88));
-    const total = labH + maxN * (t + vg) - vg, y0 = Math.max(0, (H - total) / 2);
+    const ts = Math.max(28, Math.min(colW - 16, (H - labH) / maxN - vg, 88));
+    const total = labH + maxN * (ts + vg) - vg, y0 = Math.max(0, (H - total) / 2);
     groups.forEach(([name, sub, members], gi) => {
       const x0 = W - (gi + 1) * colW;
-      label(`<b>${name}</b><span>${sub || `${members.length} ${members.length > 1 ? 'houses' : 'house'}`}</span>`, x0, y0, colW);
-      members.forEach((c, i) => place(c, x0 + (colW - t) / 2, y0 + labH + i * (t + vg), t));
+      label(`<b>${name}</b><span>${sub || t('houses', members.length)}</span>`, x0, y0, colW);
+      members.forEach((c, i) => place(c, x0 + (colW - ts) / 2, y0 + labH + i * (ts + vg), ts));
     });
   } else {
     // Sekigahara: the West on the left, the East on the right, the Sanada on the line between them
     const by = (k) => CLANS.filter((c) => c.side === k);
-    const labH = 56, S = Math.min(W / 7, (H - labH) / 4, 132), t = Math.min(S - lblH - 8, S * 0.62), CX = W / 2;
+    const labH = 56, S = Math.min(W / 7, (H - labH) / 4, 132), ts = Math.min(S - lblH - 8, S * 0.62), CX = W / 2;
     const total = labH + 4 * S, y0 = Math.max(0, (H - total) / 2), top = y0 + labH;
-    const at = (cx, row) => [cx - t / 2, top + row * S];
-    by('west').forEach((c, i) => place(c, ...at(CX - (3 - (i % 2)) * S, Math.floor(i / 2)), t));
-    by('east').forEach((c, i) => place(c, ...at(CX + (2 + (i % 2)) * S, Math.floor(i / 2)), t));
-    by('split').forEach((c) => place(c, ...at(CX, 1.5), t));
-    by('fallen').forEach((c) => place(c, CX - t / 2, top + 1.5 * S, t, true));
-    label('<b lang="ja">西軍</b><span>West</span>', CX - 2.5 * S - 60, y0, 120);
-    label('<b lang="ja">東軍</b><span>East</span>', CX + 2.5 * S - 60, y0, 120);
-    label('<b lang="ja">両方</b><span>Both sides</span>', CX - 60, top + 1.5 * S - labH, 120);
+    const at = (cx, row) => [cx - ts / 2, top + row * S];
+    by('west').forEach((c, i) => place(c, ...at(CX - (3 - (i % 2)) * S, Math.floor(i / 2)), ts));
+    by('east').forEach((c, i) => place(c, ...at(CX + (2 + (i % 2)) * S, Math.floor(i / 2)), ts));
+    by('split').forEach((c) => place(c, ...at(CX, 1.5), ts));
+    by('fallen').forEach((c) => place(c, CX - ts / 2, top + 1.5 * S, ts, true));
+    const side = t('sideShort');
+    label(`<b lang="ja">西軍</b><span>${side.west}</span>`, CX - 2.5 * S - 60, y0, 120);
+    label(`<b lang="ja">東軍</b><span>${side.east}</span>`, CX + 2.5 * S - 60, y0, 120);
+    label(`<b lang="ja">両方</b><span>${side.split}</span>`, CX - 60, top + 1.5 * S - labH, 120);
   }
 }
 
@@ -235,7 +239,7 @@ function openAnatomy(key) {
   renderInfo();
   $('#steps [data-step="compass"]').disabled = !cur.recipe;
   if (step === 'compass' && !cur.recipe) step = 'whole';
-  stage.setAttribute('aria-label', `${cur.monEn}, crest of the ${cur.houseEn}`);
+  stage.setAttribute('aria-label', t('stageAria', clanText(cur)));
   stage.innerHTML = `<defs><g id="pcs">${cur.data.pieces.map((p) => `<path d="${p.d}" fill-rule="evenodd"/>`).join('')}</g></defs>
     <g id="L-under"></g>
     <g id="L-pieces">${cur.data.pieces.map((p, i) => `<path class="pc" data-i="${i}" d="${p.d}" fill-rule="evenodd" pathLength="1" style="fill:var(--shiro);transition:transform .9s cubic-bezier(.6,0,.2,1), fill .6s, opacity .6s"/>`).join('')}</g>
@@ -246,32 +250,36 @@ function openAnatomy(key) {
 // the story opens by itself, a few words at a time; the full text is there for screen readers at once
 function unfoldStory() {
   clearInterval(storyTimer);
-  const el = $('#a-story'), words = cur.note.split(' ');
-  el.innerHTML = `<span class="visually-hidden-text" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">${cur.note}</span><span aria-hidden="true"></span>`;
+  // English unfolds a word at a time; Japanese and Chinese, which have no spaces, a character at a time
+  const note = clanText(cur).note, el = $('#a-story'), sep = lang === 'en' ? ' ' : '', words = sep ? note.split(sep) : [...note];
+  el.innerHTML = `<span class="visually-hidden-text" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">${note}</span><span aria-hidden="true"></span>`;
   const shown = el.lastChild;
-  if (reduced) { shown.textContent = cur.note; return; }
+  if (reduced) { shown.textContent = note; return; }
   let n = 0;
-  storyTimer = setInterval(() => { n += 1; shown.textContent = words.slice(0, n).join(' '); if (n >= words.length) clearInterval(storyTimer); }, 60);
+  storyTimer = setInterval(() => { n += 1; shown.textContent = words.slice(0, n).join(sep); if (n >= words.length) clearInterval(storyTimer); }, sep ? 60 : 24);
 }
 function renderInfo() {
-  const c = cur, d = c.data;
-  $('#a-name').innerHTML = `${c.houseEn}<span lang="ja">${c.house}</span>`;
-  $('#a-name').setAttribute('aria-label', `${c.houseEn}: replay the story`);
-  $('#a-meta').textContent = `${c.province} . ${c.side === 'fallen' ? `Gone ${c.fell}` : SIDE_LABEL[c.side]}`;
-  $('#a-facts').innerHTML = `<dl><dt>Lord</dt><dd>${c.lord}</dd><dt>Crest</dt><dd>${c.gloss}</dd><dt>Ink</dt><dd>${d.components} pieces . ${symText(c.sym).toLowerCase()} . ${Math.round(d.ink * 100)}% of its square</dd></dl>`;
-  $('#a-source').innerHTML = `<a href="${c.credit.page}">${c.credit.file}</a> by ${c.credit.artist || c.credit.uploader}, ${c.credit.license}. Re-traced here.`;
+  const c = clanText(cur), d = c.data;
+  // clanText gives the house in Traditional Chinese characters when reading in Chinese
+  $('#a-name').innerHTML = `${c.houseEn}<span lang="${lang === 'zh' ? 'zh-Hant' : 'ja'}">${c.house}</span>`;
+  $('#a-name').setAttribute('aria-label', t('replay', houseName(c)));
+  $('#a-meta').textContent = `${c.province} . ${c.side === 'fallen' ? t('gone', c.fell) : t('sides')[c.side]}`;
+  $('#a-facts').innerHTML = `<dl><dt>${t('lord')}</dt><dd>${c.lord}</dd><dt>${t('crestL')}</dt><dd>${c.gloss}</dd><dt>${t('inkL')}</dt><dd>${t('inkLine', d.components, symText(c.sym), Math.round(d.ink * 100))}</dd></dl>`;
+  $('#a-source').innerHTML = t('sourceLine', c.credit);
   $('#a-title').textContent = c.mon;
-  $('#a-en').textContent = `${c.monEn} . ${c.houseEn}`;
+  $('#a-en').textContent = `${c.read} . ${houseName(c)}`;
   const strip = $('#strip');
   if (!strip.children.length) {
-    strip.innerHTML = CLANS.map((x) => `<button data-key="${x.key}" aria-label="${x.houseEn}"><svg viewBox="0 0 1000 1000" aria-hidden="true">${crestPath(x)}</svg></button>`).join('');
+    strip.innerHTML = CLANS.map((x) => `<button data-key="${x.key}"><svg viewBox="0 0 1000 1000" aria-hidden="true">${crestPath(x)}</svg></button>`).join('');
     strip.onclick = (e) => { const b = e.target.closest('button'); if (b) morph(b.querySelector('svg'), stage, () => { quietDraw = true; openAnatomy(b.dataset.key); quietDraw = false; }); };
   }
-  strip.querySelectorAll('button').forEach((b) => b.setAttribute('aria-current', b.dataset.key === c.key));
+  strip.querySelectorAll('button').forEach((b) => { b.setAttribute('aria-current', b.dataset.key === c.key); b.setAttribute('aria-label', houseName(BY_KEY[b.dataset.key])); });
 }
 $('#a-name').onclick = () => unfoldStory();
-[['#a-facts-btn', '#a-facts', 'Facts'], ['#a-source-btn', '#a-source', 'Source']].forEach(([b, p, name]) => {
-  $(b).onclick = () => { const open = $(p).hidden; $(p).hidden = !open; $(b).setAttribute('aria-expanded', open); $(b).textContent = `${open ? '−' : '+'} ${name}`; };
+const FOLDS = [['#a-facts-btn', '#a-facts', 'facts'], ['#a-source-btn', '#a-source', 'source']];
+const foldLabels = () => FOLDS.forEach(([b, p, key]) => { $(b).textContent = `${$(p).hidden ? '+' : '−'} ${t(key)}`; });
+FOLDS.forEach(([b, p]) => {
+  $(b).onclick = () => { const open = $(p).hidden; $(p).hidden = !open; $(b).setAttribute('aria-expanded', open); foldLabels(); };
 });
 
 function groupStats(d) {
@@ -304,10 +312,10 @@ function setStep(s, fresh) {
   pcsG.style.opacity = 1;
   const pcs = [...stage.querySelectorAll('.pc')];
   pcs.forEach((p) => { p.style.transform = ''; p.style.fill = 'var(--shiro)'; });
-  const c = cur, d = c.data, [cx, cy] = d.centroid, sym = c.sym, cap = $('#step-cap');
+  const c = clanText(cur), d = c.data, [cx, cy] = d.centroid, sym = c.sym, cap = $('#step-cap');
 
   if (s === 'whole') {
-    cap.textContent = `${c.gloss}.`;
+    cap.textContent = t('capGloss', c.gloss);
     if (!quietDraw) pcs.forEach((p, i) => p.animate([{ fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 1 }, { fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 0, offset: 0.7 }, { fillOpacity: 1, strokeWidth: 0, strokeDasharray: '1 1', strokeDashoffset: 0 }], { duration: reduced ? 0 : 1100, delay: reduced ? 0 : Math.min(i * 40, 1200), easing: 'ease-in-out', fill: 'both' }));
   }
   if (s === 'pieces') {
@@ -320,8 +328,8 @@ function setStep(s, fresh) {
       if (color.has(p)) el.style.fill = color.get(p);
     }));
     const singles = d.pieces.filter((p) => p.group == null && !p.dust).length, dust = d.pieces.find((p) => p.dust);
-    cap.innerHTML = `${d.components} pieces of ink. Matching colours are the shapes the painter repeated.` +
-      `<span class="legend">${groups.slice(0, 6).map((g, gi) => `<span><i style="background:${GROUP_COLORS[gi]}"></i>${g.length} matching</span>`).join('')}${singles ? `<span><i style="background:var(--shiro)"></i>${singles} unique</span>` : ''}${dust ? `<span>${dust.dust} tiny details</span>` : ''}</span>`;
+    cap.innerHTML = t('capPieces', d.components) +
+      `<span class="legend">${groups.slice(0, 6).map((g, gi) => `<span><i style="background:${GROUP_COLORS[gi]}"></i>${t('matching', g.length)}</span>`).join('')}${singles ? `<span><i style="background:var(--shiro)"></i>${t('unique', singles)}</span>` : ''}${dust ? `<span>${t('tiny', dust.dust)}</span>` : ''}</span>`;
   }
   if (s === 'symmetry') {
     over.innerHTML = `<path class="fp" d="${fpPath(d.rot)}" fill="none" stroke="var(--kihada)" stroke-width="7" stroke-linejoin="round" pathLength="1"/>
@@ -342,7 +350,7 @@ function setStep(s, fresh) {
         ghost.setAttribute('transform', `rotate(${a.toFixed(2)} ${cx} ${cy})`);
       }, (n ? n * 1.4 : 6) * 1000, 0, true);
     }
-    cap.innerHTML = `<b>${symText(sym)}</b>. The yellow trace bulges where a turn lands on the original.`;
+    cap.innerHTML = t('capSym', symText(sym));
   }
   if (s === 'unit') {
     const n = sym.n === Infinity ? 36 : sym.n;
@@ -357,7 +365,7 @@ function setStep(s, fresh) {
         if (!k) return;
         run((t) => { const e = easeIO(t); g.setAttribute('transform', `rotate(${((k - 1 + e) * w).toFixed(2)} ${cx} ${cy})`); g.setAttribute('opacity', e.toFixed(3)); }, 600, 500 + k * (n > 12 ? 60 : 380));
       });
-      cap.innerHTML = sym.n === Infinity ? 'A circle: any slice is the whole.' : `${Math.round(w)}°, turned ${n} times.${sym.axes.length >= n ? ' Each wedge mirrors itself, so the true unit is half of one.' : ''}`;
+      cap.innerHTML = sym.n === Infinity ? t('unitInf') : t('unitWedge', Math.round(w), n, sym.axes.length >= n);
     } else if (sym.axes.length) {
       pcsG.style.opacity = 0.12;
       const ax = sym.axes[0];
@@ -366,16 +374,16 @@ function setStep(s, fresh) {
         <line x1="${cx}" y1="-120" x2="${cx}" y2="1120" stroke="var(--aobana)" stroke-width="5" stroke-dasharray="14 10"/></g>`;
       const mir = $('.mir', over);
       run((t) => { const e = easeIO(t); mir.setAttribute('transform', `translate(${cx} 0) scale(${(1 - 2 * e).toFixed(3)} 1) translate(${-cx} 0)`); mir.setAttribute('opacity', (0.2 + 0.8 * e).toFixed(3)); }, 1200, 500);
-      cap.textContent = 'One mirror axis.';
+      cap.textContent = t('unitMirror');
     } else {
-      cap.textContent = 'Nothing repeats: drawn freehand.';
+      cap.textContent = t('unitNone');
     }
   }
   if (s === 'compass' && c.recipe) {
     pcsG.style.opacity = 0.16;
     over.innerHTML = `<g transform="translate(500 500)"><svg x="-500" y="-500" width="1000" height="1000" viewBox="-500 -500 1000 1000" overflow="visible" id="cmp">${crestMarkup(c.recipe, { guides: true })}</svg></g>`;
     animateConstruction($('#cmp', over), { speed: 1.4, keepGuides: 0.35 });
-    cap.innerHTML = `Circles and straight lines only; the faint shape is the original. <button id="to-ws" class="text-btn">Open in the workshop</button>`;
+    cap.innerHTML = `${t('capCompass')}${c.fit ? ` ${t('match', Math.round(c.fit * 100))}` : ''} <button id="to-ws" class="text-btn">${t('toWs')}</button>`;
     $('#to-ws').onclick = () => { ws.set({ ...DEFAULT, ...c.recipe }); setSheet(false); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 900); };
   }
 }
@@ -406,36 +414,38 @@ const ws = (() => {
   const mini = (s) => `<svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(s)}</svg>`;
   const motifSpec = (k) => ({ enclosure: 'none', layout: 'single', motif: k, size: 0.85, aspect: k === 'uroko' ? 0.866 : 0.75, center: 'none' });
   const encSpec = (k) => ({ enclosure: k, layout: 'single', motif: k === 'none' ? 'hoshi' : 'none', size: 0.12, lobes: 4 });
-  const encName = (k) => (k === 'none' ? 'None' : ENCLOSURES[k].en.replace(/^in an? /, '').replace('tortoiseshell ', '').replace(' outline', ''));
-  const NAMES = {
-    layout: LAYOUTS,
-    center: { none: 'No centre', hoshi: 'Star', stamen: 'Stamens', ken: 'Sword stamens', same: 'Repeat the motif' },
-    overlay: { juji: 'Cross', ichimonji: 'The character 一', hiki1: 'One bar', hiki2: 'Two bars', hiki3: 'Three bars' },
-    style: { hinata: 'Solid (hinata)', kage: 'Outline (kage)' },
-  };
-  // a group of symbols: its kanji (English on hover) over columns of five
+  // overlay has no 'none' symbol: picking the current one again takes it off
+  const names = (key) => ({ layout: t('layouts'), center: t('centers'), overlay: Object.fromEntries(Object.entries(t('overlays')).filter(([k]) => k !== 'none')), style: { hinata: t('hinata'), kage: t('kage') } })[key];
+  // a group of symbols: its kanji (its name on hover) over columns of five
   const group = (key, jp, en, opts) => `<div class="sym" data-for="${key}"><b lang="ja" title="${en}">${jp}</b><div class="opts" data-pick="${key}" role="group" aria-label="${en}">${opts.map(([v, label, art]) => `<button type="button" data-v="${v}" aria-pressed="false" aria-label="${label}" title="${label}">${art}</button>`).join('')}</div></div>`;
-  const singles = (key) => Object.entries(NAMES[key]).map(([v, label]) => [v, label, icon(ICON[key][v])]);
-  $('#ws-symbols').innerHTML =
-    `<div class="tier top">${group('layout', '配置', 'Arrangement', singles('layout'))}${group('center', '芯', 'Centre', singles('center'))}${group('overlay', '重ね', 'Overlay', singles('overlay'))}${group('style', '色', 'Style', singles('style'))}</div>` +
-    `<div class="tier">${group('motif', '紋', 'Motif', Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => [k, MOTIFS[k].en, mini(motifSpec(k))]))}${group('enclosure', '輪', 'Enclosure', Object.keys(ENCLOSURES).map((k) => [k, encName(k), mini(encSpec(k))]))}</div>`;
+  const singles = (key) => Object.entries(names(key)).map(([v, label]) => [v, label, icon(ICON[key][v])]);
   // a number: its kanji, a brush stroke, and the value
   const brush = (key, en) => `<div class="brush" role="slider" tabindex="0" aria-label="${en}" data-key="${key}"><svg viewBox="0 0 180 24" aria-hidden="true"><path class="track" filter="url(#dry)"/><path class="ink" filter="url(#ink)"/><circle class="drop" cy="12" r="2.6"/></svg></div>`;
   const num = (key, jp, en, ctl) => `<div class="num" data-for="${key}"><b lang="ja" title="${en}">${jp}</b>${ctl}<output data-out="${key}"></output></div>`;
-  const stepper = (key, en, extra = '') => `<div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${en}: less">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${en}: more">›</button></div>`;
-  $('#ws-numbers').innerHTML = [
-    num('n', '数', 'How many', brush('n', 'How many')),
-    num('rows', '行', 'Rows', brush('rows', 'Rows')),
-    num('cols', '列', 'Columns', brush('cols', 'Columns')),
-    num('r', '間', 'Distance from centre', brush('r', 'Distance from centre')),
-    num('size', '大', 'Motif size', brush('size', 'Motif size')),
-    num('centerSize', '芯径', 'Centre size', brush('centerSize', 'Centre size')),
-    num('rot', '回', 'Turn', stepper('rot', 'Turn', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>')),
-    num('dy', '下', 'Shift down', stepper('dy', 'Shift down')),
-    num('aspect', '伸', 'Stretch', stepper('aspect', 'Stretch')),
-    num('lobes', '弁', 'Quince lobes', stepper('lobes', 'Quince lobes')),
-    `<div class="actions"><button type="button" class="primary" id="ws-draw">Draw with compass</button><button type="button" id="ws-guides" aria-pressed="false">Guides</button><button type="button" id="ws-random">Surprise me</button><button type="button" id="ws-download">Download SVG</button></div>`,
-  ].join('');
+  const stepper = (key, en, extra = '') => `<div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${t('less', en)}">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${t('more', en)}">›</button></div>`;
+  const slide = (key, jp, label) => num(key, jp, t(label), brush(key, t(label)));
+  const stepNum = (key, jp, label, extra) => num(key, jp, t(label), stepper(key, t(label), extra));
+  function renderControls() {
+    $('#ws-symbols').innerHTML =
+      `<div class="tier top">${group('layout', '配置', t('cLayout'), singles('layout'))}${group('center', '芯', t('cCenter'), singles('center'))}${group('overlay', '重ね', t('cOverlay'), singles('overlay'))}${group('style', '色', t('cStyle'), singles('style'))}</div>` +
+      `<div class="tier">${group('motif', '紋', t('cMotif'), Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => [k, t('motifs')[k], mini(motifSpec(k))]))}${group('enclosure', '輪', t('cEnc'), Object.keys(ENCLOSURES).map((k) => [k, t('encs')[k], mini(encSpec(k))]))}</div>`;
+    $('#ws-numbers').innerHTML = [
+      slide('n', '数', 'cN'), slide('rows', '行', 'cRows'), slide('cols', '列', 'cCols'), slide('r', '間', 'cR'), slide('size', '大', 'cSize'), slide('centerSize', '芯径', 'cCenterSize'),
+      stepNum('rot', '回', 'cRot', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>'),
+      stepNum('dy', '下', 'cDy'), stepNum('aspect', '伸', 'cAspect'), stepNum('lobes', '弁', 'cLobes'),
+      `<div class="actions"><button type="button" class="primary" id="ws-draw">${t('draw')}</button><button type="button" id="ws-guides" aria-pressed="false">${t('guides')}</button><button type="button" id="ws-random">${t('surprise')}</button><button type="button" id="ws-download">${t('download')}</button></div>`,
+    ].join('');
+    $('#ws-guides').onclick = () => { guides = !guides; set(spec); };
+    $('#ws-draw').onclick = draw;
+    $('#ws-random').onclick = () => { set(randomSpec((Math.random() * 1e9) | 0)); draw(); };
+    $('#ws-download').onclick = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([crestFile(spec)], { type: 'image/svg+xml' }));
+      a.download = `kamon-${build(spec).name.ro.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.svg`;
+      a.click();
+    };
+  }
+  renderControls();
   const STEPS = { rot: [15, 0, 180], aspect: [0.05, 0.4, 1.6], dy: [0.02, -0.4, 0.4], lobes: [1, 4, 8] };
   const nearest = (vals, v) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
   // a brush stroke: a blunt round start that tapers to a point with a small lift
@@ -446,9 +456,11 @@ const ws = (() => {
   root.addEventListener('click', (e) => {
     const pick = e.target.closest('[data-pick] button');
     if (pick) {
-      const k = pick.parentElement.dataset.pick, v = pick.dataset.v;
-      // overlay has no 'none' symbol: picking the current one again takes it off
-      return set({ ...spec, [k]: k === 'overlay' && spec.overlay === v ? 'none' : v });
+      const k = pick.parentElement.dataset.pick, v = pick.dataset.v, next = { ...spec, [k]: k === 'overlay' && spec.overlay === v ? 'none' : v };
+      // settings tuned for one historical crest don't carry over to a different enclosure or motif
+      if (k === 'enclosure') for (const x of ['ringW', 'innerRing', 'clip', 'mokkoFill', 'lobeR', 'holeR']) delete next[x];
+      if (k === 'motif') for (const x of ['spin', 'centerSpin']) delete next[x];
+      return set(next);
     }
     const st = e.target.closest('[data-step-key]');
     if (st) { const k = st.dataset.stepKey, [d, lo, hi] = STEPS[k]; return set({ ...spec, [k]: +Math.min(hi, Math.max(lo, spec[k] + d * +st.dataset.dir)).toFixed(2) }); }
@@ -490,11 +502,11 @@ const ws = (() => {
       $('.drop', sl).setAttribute('cx', f1(Math.min(len + 1, 178)));
     });
     const ring = spec.layout === 'ring', grid = spec.layout === 'grid';
-    const show = { n: ring, rows: grid, cols: grid, center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko'].includes(spec.motif), lobes: spec.enclosure === 'mokko' };
+    const show = { n: ring, rows: grid, cols: grid, center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko' };
     root.querySelectorAll('[data-for]').forEach((el) => { if (el.dataset.for in show) el.hidden = !show[el.dataset.for]; });
     root.querySelectorAll('[data-out]').forEach((o) => {
       const k = o.dataset.out;
-      o.textContent = off(k) ? (k === 'r' || spec.layout !== 'ring' ? 'Ring only' : 'Pick a centre') : k === 'rot' ? `${spec.rot}°` : ['n', 'rows', 'cols', 'lobes'].includes(k) ? String(spec[k]) : (+spec[k]).toFixed(2);
+      o.textContent = off(k) ? (k === 'r' || spec.layout !== 'ring' ? t('ringOnly') : t('pickCentre')) : k === 'rot' ? `${spec.rot}°` : ['n', 'rows', 'cols', 'lobes'].includes(k) ? String(spec[k]) : (+spec[k]).toFixed(2);
     });
     $('#dial').setAttribute('d', RING + spoke((spec.rot - 90) * Math.PI / 180, 0, 36, 8));
     $('#ws-guides').setAttribute('aria-pressed', guides);
@@ -504,24 +516,16 @@ const ws = (() => {
     spec = { ...DEFAULT, ...s };
     const b = build(spec);
     svg.innerHTML = crestMarkup(b, { guides });
-    svg.setAttribute('aria-label', b.name.en);
-    $('#ws-name').innerHTML = `<span lang="ja">${b.name.jp}</span><span>${b.name.ro} . ${b.name.en}</span>`;
+    const sub = crestDesc(spec, b);
+    svg.setAttribute('aria-label', sub || b.name.jp);
+    $('#ws-name').innerHTML = `<span lang="ja">${b.name.jp}</span><span>${b.name.ro}${sub ? ` . <span lang="${LANG_TAG[lang]}">${sub}</span>` : ''}</span>`;
     sync();
   }
   async function draw() {
     svg.innerHTML = crestMarkup(build(spec), { guides: true });
     await animateConstruction(svg, { speed: 1, keepGuides: guides ? 0.75 : 0 });
   }
-  $('#ws-guides').onclick = () => { guides = !guides; set(spec); };
-  $('#ws-draw').onclick = draw;
-  $('#ws-random').onclick = () => { set(randomSpec((Math.random() * 1e9) | 0)); draw(); };
-  $('#ws-download').onclick = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([crestFile(spec)], { type: 'image/svg+xml' }));
-    a.download = `kamon-${build(spec).name.ro.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.svg`;
-    a.click();
-  };
-  return { set, draw, get: () => spec, svg };
+  return { set, draw, get: () => spec, svg, relabel: () => { renderControls(); set(spec); } };
 })();
 
 // ================= FOOTER: A CLOTH OF CRESTS =================
@@ -532,14 +536,14 @@ function turnOf(s) { const step = stepOf(s); return step * Math.ceil(120 / step)
 let seed = 1600, spins = 0;
 function weaveCell(s) {
   const b = build(s);
-  return `<button type="button" class="turn" style="--deg:${turnOf(b.spec)}deg" data-step="${stepOf(b.spec)}" aria-label="${b.name.en}: open in the workshop"><svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg></button>`;
+  return `<button type="button" class="turn" style="--deg:${turnOf(b.spec)}deg" data-step="${stepOf(b.spec)}" aria-label="${t('openWs', crestDesc(b.spec, b) || b.name.jp)}"><svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg></button>`;
 }
 function weave() {
   // two blocks of two rows on the 12-column grid; narrower screens show 8 or 4 columns (CSS hides the rest)
   const el = $('#weave'), per = 24;
   const specs = Array.from({ length: per * 2 }, (_, i) => randomSpec(seed + i * 7919));
   const block = (b) => `<div class="row">${specs.slice(b * per, b * per + per).map((s, i) => `<span class="cell" style="--d:${((i % 12) + Math.floor(i / 12) * 3 + b * 6) * 40}ms;transform:rotate(${spins * 360}deg)" data-i="${b * per + i}">${weaveCell(s)}</span>`).join('')}</div>`;
-  el.innerHTML = block(0) + '<button type="button" class="again" aria-label="Draw new crests"><b>Draw again</b></button>' + block(1);
+  el.innerHTML = block(0) + `<button type="button" class="again" aria-label="${t('drawNew')}"><b>${t('drawAgain')}</b></button>` + block(1);
   el.querySelector('.again').onclick = again;
   el.onclick = (e) => {
     const t = e.target.closest('.turn'); if (!t) return;
@@ -592,7 +596,27 @@ function again() {
   }, reduced ? 0 : 700);
 }
 
+// ---------- language ----------
+function applyStatic() {
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n)));
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  const sw = $('#lang-switch');
+  sw.setAttribute('aria-label', t('langLabel'));
+  sw.innerHTML = LANGS.map(([k, label]) => `<button type="button" data-lang="${k}" lang="${LANG_TAG[k]}" aria-pressed="${k === lang}">${label}</button>`).join('');
+  foldLabels();
+}
+$('#lang-switch').onclick = (e) => { const b = e.target.closest('button'); if (b) setLang(b.dataset.lang); };
+onLang(() => {
+  applyStatic(); heroCap(); relabelTiles(); layout();
+  renderInfo(); unfoldStory(); quietDraw = true; setStep(step); quietDraw = false;
+  ws.relabel();
+  const el = $('#weave'); el.querySelectorAll('.cell').forEach((c, i) => { c.innerHTML = weaveCell(el._specs[i]); });
+  const again = el.querySelector('.again'); again.setAttribute('aria-label', t('drawNew')); again.firstElementChild.textContent = t('drawAgain');
+});
+
 // ---------- boot ----------
+applyStatic();
 initBoard();
 layout();
 quietDraw = true; openAnatomy('oda'); quietDraw = false;

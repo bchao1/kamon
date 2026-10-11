@@ -7,29 +7,30 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Ccircle r='48' fill='%2313213f'/%3E%3Ccircle r='40' fill='none' stroke='%23eef0ea' stroke-width='5'/%3E%3Cg fill='%23eef0ea'%3E%3Ccircle cy='-14' r='10'/%3E%3Ccircle cx='12' cy='7' r='10'/%3E%3Ccircle cx='-12' cy='7' r='10'/%3E%3C/g%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Yuji+Syuku&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Yuji+Syuku&family=Zen+Kaku+Gothic+New:wght@400;500&family=Noto+Sans+TC:wght@400;500&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+  <div class="lang-switch" role="group" id="lang-switch"></div>
   <!-- Hero: the crest rises into full view as you scroll, then is dealt into the twenty houses -->
   <header class="hero-track" id="top">
     <div class="hero">
       <p class="v hero-kanji" lang="ja" aria-hidden="true">家紋</p>
       <div class="hero-words">
-        <h1>Kamon<br>Deconstruct</h1>
-        <p class="lede">The kamon are the family crests of Japan’s warring houses, laid out by painters with a compass and a ruler. This experiment traces twenty of them back to that geometry, then turns the rules into a grammar you can draw with.</p>
+        <h1 data-i18n="h1">Kamon<br>Deconstruct</h1>
+        <p class="lede" data-i18n="lede">The kamon are the family crests of Japan’s warring houses, laid out by painters with a compass and a ruler. This experiment traces twenty of them back to that geometry, then turns the rules into a grammar you can draw with.</p>
       </div>
-      <nav class="hero-nav" aria-label="Start">
-        <a href="#gallery"><span lang="ja">二十の家</span><small>Twenty houses</small></a>
-        <a href="#workshop"><span lang="ja">作る</span><small>Draw a crest</small></a>
+      <nav class="hero-nav" data-i18n-aria="startNav" aria-label="Start">
+        <a href="#gallery"><span lang="ja">二十の家</span><small data-i18n="navGallery">Twenty houses</small></a>
+        <a href="#workshop"><span lang="ja">作る</span><small data-i18n="navWorkshop">Draw a crest</small></a>
       </nav>
       <figure class="hero-crest" aria-hidden="true">
         <svg id="hero-svg" viewBox="-500 -500 1000 1000"></svg>
         <svg class="traced" id="hero-traced" viewBox="0 0 1000 1000"></svg>
       </figure>
       <p class="hero-cap" id="hero-cap"></p>
-      <p class="cue" aria-hidden="true">+ Scroll</p>
+      <p class="cue" aria-hidden="true" data-i18n="cue">+ Scroll</p>
     </div>
   </header>
 
@@ -37,14 +38,14 @@
     <!-- Twenty houses: title top centre, menu split left and right, board in columns 3–10 -->
     <section class="frame" id="gallery" aria-labelledby="g-title">
       <h2 class="ftitle" id="g-title" data-reveal><span lang="ja" id="g-jp">二十の家</span><span class="ften" id="g-en">Twenty houses . 1560–1600</span></h2>
-      <nav class="vmenu g-left" aria-label="Arrange the houses" data-reveal>
-        <button data-mode="grid" aria-pressed="true"><span lang="ja">家ごと</span><small>By house</small></button>
-        <button data-mode="symmetry" aria-pressed="false"><span lang="ja">対称</span><small>Symmetry</small></button>
+      <nav class="vmenu g-left" data-i18n-aria="arrange" aria-label="Arrange the houses" data-reveal>
+        <button data-mode="grid" aria-pressed="true"><span lang="ja">家ごと</span><small data-i18n="byHouse">By house</small></button>
+        <button data-mode="symmetry" aria-pressed="false"><span lang="ja">対称</span><small data-i18n="bySym">Symmetry</small></button>
       </nav>
       <div class="g-board"><div id="board" class="board"></div></div>
-      <nav class="vmenu g-right" aria-label="Arrange the houses, continued" data-reveal>
-        <button data-mode="motif" aria-pressed="false"><span lang="ja">紋様</span><small>Motif</small></button>
-        <button data-mode="side" aria-pressed="false"><span lang="ja">関ヶ原</span><small>Sekigahara</small></button>
+      <nav class="vmenu g-right" data-i18n-aria="arrange2" aria-label="Arrange the houses, continued" data-reveal>
+        <button data-mode="motif" aria-pressed="false"><span lang="ja">紋様</span><small data-i18n="byMotif">Motif</small></button>
+        <button data-mode="side" aria-pressed="false"><span lang="ja">関ヶ原</span><small data-i18n="bySide">Sekigahara</small></button>
       </nav>
       <p class="fnote" id="g-note" aria-live="polite"></p>
     </section>
@@ -52,7 +53,7 @@
 
     <!-- Draw your own: every choice drawn as a symbol in vertical columns on the left, every number a brush stroke on the right, the crest between -->
     <section class="frame" id="workshop" aria-labelledby="ws-title">
-      <h2 class="ftitle" id="ws-title" data-reveal><span lang="ja">作る</span><span class="ften">Draw your own</span></h2>
+      <h2 class="ftitle" id="ws-title" data-reveal><span lang="ja">作る</span><span class="ften" data-i18n="wsH">Draw your own</span></h2>
       <div class="ws">
         <div class="ws-symbols" id="ws-symbols"></div>
         <figure class="ws-crest"><svg id="ws-svg" viewBox="-500 -500 1000 1000" role="img"></svg><figcaption class="ws-name" id="ws-name"></figcaption></figure>
@@ -67,14 +68,14 @@
 
   <!-- Footer: a cloth of crests from the grammar; each turns one step of its symmetry on hover -->
   <footer class="frame foot" id="field">
-    <div class="weave" id="weave" aria-label="Crests drawn by the workshop. Pick one to open it in the workshop."></div>
-    <p class="credit">Crest drawings from <a href="https://commons.wikimedia.org/wiki/Category:SVG_Japanese_family_crests">Wikimedia Commons</a>, re-traced. Each lists its artist and licence; the re-traced shapes share it (CC BY-SA where the source is). The workshop’s crests are drawn from scratch.</p>
+    <div class="weave" id="weave" data-i18n-aria="fieldAria" aria-label="Crests drawn by the workshop. Pick one to open it in the workshop."></div>
+    <p class="credit" data-i18n="foot">Crest drawings from <a href="https://commons.wikimedia.org/wiki/Category:SVG_Japanese_family_crests">Wikimedia Commons</a>, re-traced. Each lists its artist and licence; the re-traced shapes share it (CC BY-SA where the source is). The workshop’s crests are drawn from scratch.</p>
     <p class="sign"><span lang="ja">家紋</span><span>Kamon</span></p>
   </footer>
   <div class="scrim" id="scrim"></div>
   <!-- Taken apart: a sheet that slides in from the right over the twenty houses; house in columns 1–3, crest in 4–9, crest name in 10–12 -->
   <section class="frame deep sheet" id="anatomy" role="dialog" aria-modal="true" aria-labelledby="a-title" inert>
-    <button class="sheet-back" id="a-close"><span aria-hidden="true">←</span><span lang="ja">二十の家</span>Back to the twenty houses</button>
+    <button class="sheet-back" id="a-close"><span aria-hidden="true">←</span><span lang="ja">二十の家</span><span data-i18n="back">Back to the twenty houses</span></button>
     <div class="a-left">
       <div class="a-info" data-reveal>
         <button class="a-name" id="a-name"></button>
@@ -85,18 +86,18 @@
         <button class="fold" id="a-source-btn" aria-expanded="false" aria-controls="a-source">+ Source</button>
         <div class="folded" id="a-source" hidden></div>
       </div>
-      <div class="vmenu small" id="steps" role="group" aria-label="Ways to take the crest apart" data-reveal>
-        <button data-step="whole"><span lang="ja">一全体</span><small>Whole</small></button>
-        <button data-step="pieces"><span lang="ja">二部品</span><small>Pieces</small></button>
-        <button data-step="symmetry"><span lang="ja">三対称</span><small>Symmetry</small></button>
-        <button data-step="unit"><span lang="ja">四単位</span><small>Unit</small></button>
-        <button data-step="compass"><span lang="ja">五作図</span><small>Compass</small></button>
+      <div class="vmenu small" id="steps" role="group" data-i18n-aria="stepsAria" aria-label="Ways to take the crest apart" data-reveal>
+        <button data-step="whole"><span lang="ja">一全体</span><small data-i18n="sWhole">Whole</small></button>
+        <button data-step="pieces"><span lang="ja">二部品</span><small data-i18n="sPieces">Pieces</small></button>
+        <button data-step="symmetry"><span lang="ja">三対称</span><small data-i18n="sSym">Symmetry</small></button>
+        <button data-step="unit"><span lang="ja">四単位</span><small data-i18n="sUnit">Unit</small></button>
+        <button data-step="compass"><span lang="ja">五作図</span><small data-i18n="sCompass">Compass</small></button>
       </div>
     </div>
     <div class="a-center">
       <svg id="stage" viewBox="-130 -130 1260 1260" role="img"></svg>
       <p class="a-cap" id="step-cap" aria-live="polite"></p>
-      <div class="strip" id="strip" role="group" aria-label="Choose a house"></div>
+      <div class="strip" id="strip" role="group" data-i18n-aria="choose" aria-label="Choose a house"></div>
     </div>
     <div class="a-right" data-reveal>
       <h2 class="v a-title" id="a-title" lang="ja"></h2>
