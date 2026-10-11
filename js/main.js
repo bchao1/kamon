@@ -206,8 +206,24 @@ function groupStats(d) {
   d.pieces.forEach((p) => { if (p.group != null) (gs[p.group] ||= []).push(p); });
   return Object.values(gs).sort((a, b) => b.length - a.length || b[0].area - a[0].area);
 }
+// Step motion is drawn by setting SVG transform attributes each frame (rotate(a cx cy)), so the
+// centre of every turn is exact in every browser, without relying on CSS transform-box.
+let stageToken = 0;
+const easeIO = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 function setStep(s, fresh) {
   step = s;
+  const token = ++stageToken;
+  const run = (fn, duration, delay = 0, loop = false) => {
+    if (reduced) { fn(1); return; }
+    const t0 = performance.now() + delay;
+    const tick = (now) => {
+      if (token !== stageToken) return;
+      let t = (now - t0) / duration;
+      if (t >= 0) { t = loop ? t % 1 : Math.min(1, t); fn(t); if (!loop && t >= 1) return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
   document.querySelectorAll('#steps button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.step === s));
   stage.getAnimations({ subtree: true }).forEach((a) => a.cancel());
   const under = $('#L-under', stage), over = $('#L-over', stage), pcsG = $('#L-pieces', stage);
@@ -218,7 +234,7 @@ function setStep(s, fresh) {
   const c = cur, d = c.data, [cx, cy] = d.centroid, sym = c.sym, cap = $('#step-cap');
 
   if (s === 'whole') {
-    cap.textContent = `${c.mon}, ${c.monEn}. ${c.gloss}.`;
+    cap.textContent = `${c.gloss}.`;
     if (!quietDraw) pcs.forEach((p, i) => p.animate([{ fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 1 }, { fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 0, offset: 0.7 }, { fillOpacity: 1, strokeWidth: 0, strokeDasharray: '1 1', strokeDashoffset: 0 }], { duration: reduced ? 0 : 1100, delay: reduced ? 0 : Math.min(i * 40, 1200), easing: 'ease-in-out', fill: 'both' }));
   }
   if (s === 'pieces') {
@@ -231,7 +247,7 @@ function setStep(s, fresh) {
       if (color.has(p)) el.style.fill = color.get(p);
     }));
     const singles = d.pieces.filter((p) => p.group == null && !p.dust).length, dust = d.pieces.find((p) => p.dust);
-    cap.innerHTML = `${d.components} separate pieces of ink, pulled apart. Pieces with the same area share a colour: the shapes the painter repeated.` +
+    cap.innerHTML = `${d.components} pieces of ink. Matching colours are the shapes the painter repeated.` +
       `<span class="legend">${groups.slice(0, 6).map((g, gi) => `<span><i style="background:${GROUP_COLORS[gi]}"></i>${g.length} matching</span>`).join('')}${singles ? `<span><i style="background:var(--shiro)"></i>${singles} unique</span>` : ''}${dust ? `<span>${dust.dust} tiny details</span>` : ''}</span>`;
   }
   if (s === 'symmetry') {
@@ -243,16 +259,17 @@ function setStep(s, fresh) {
     if (sym.n > 1) {
       const ghost = document.createElementNS(NS, 'use');
       ghost.setAttribute('href', '#pcs'); ghost.setAttribute('fill', 'var(--kihada)'); ghost.setAttribute('opacity', '0.45');
-      ghost.style.transformOrigin = `${cx}px ${cy}px`; ghost.style.transformBox = 'view-box';
       over.append(ghost);
-      if (!reduced) {
-        const n = sym.n === Infinity ? 1 : sym.n, frames = [];
-        for (let k = 0; k <= n; k++) { frames.push({ transform: `rotate(${(k * 360) / n}deg)`, offset: k / n }); }
-        ghost.animate(sym.n === Infinity ? [{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }] : frames.flatMap((f, k) => k === 0 ? [f] : [{ ...f, offset: f.offset - 0.5 / n }, f]).map((f, i, a) => ({ ...f, offset: i === 0 ? 0 : i === a.length - 1 ? 1 : f.offset })), { duration: (sym.n === Infinity ? 6 : sym.n * 1.4) * 1000, iterations: Infinity, easing: 'cubic-bezier(.6,0,.3,1)' });
-      }
+      const n = sym.n === Infinity ? 0 : sym.n;
+      // hold, then turn one step about the crest's own centre; repeat
+      run((t) => {
+        let a;
+        if (!n) a = t * 360;
+        else { const seg = t * n, k = Math.floor(seg), u = seg - k; a = (k + easeIO(Math.min(1, Math.max(0, (u - 0.5) * 2)))) * (360 / n); }
+        ghost.setAttribute('transform', `rotate(${a.toFixed(2)} ${cx} ${cy})`);
+      }, (n ? n * 1.4 : 6) * 1000, 0, true);
     }
-    const peaks = sym.n > 1 && sym.n !== Infinity ? `It peaks every ${Math.round(360 / sym.n)}°.` : '';
-    cap.innerHTML = `The yellow line shows how much the crest overlaps itself as it turns through 360°: further out means a closer match. ${peaks} Blue dashes mark mirror axes. Result: <b>${symText(sym)}</b>.`;
+    cap.innerHTML = `<b>${symText(sym)}</b>. The yellow trace bulges where a turn lands on the original.`;
   }
   if (s === 'unit') {
     const n = sym.n === Infinity ? 36 : sym.n;
@@ -261,30 +278,31 @@ function setStep(s, fresh) {
       const w = 360 / n, a0 = -90 - w / 2, R = 900;
       const P = (a) => `${(cx + R * Math.cos((a * Math.PI) / 180)).toFixed(1)} ${(cy + R * Math.sin((a * Math.PI) / 180)).toFixed(1)}`;
       over.innerHTML = `<clipPath id="wedge"><path d="M${cx} ${cy}L${P(a0)}A${R} ${R} 0 ${w > 180 ? 1 : 0} 1 ${P(a0 + w)}Z"/></clipPath>` +
-        Array.from({ length: n }, (_, k) => `<g class="cp" style="transform-origin:${cx}px ${cy}px;transform-box:view-box"><use href="#pcs" clip-path="url(#wedge)" fill="${k ? 'var(--shiro)' : 'var(--kihada)'}"/></g>`).join('') +
+        Array.from({ length: n }, (_, k) => `<g class="cp"${k ? ` opacity="0" transform="rotate(${(k - 1) * w} ${cx} ${cy})"` : ''}><use href="#pcs" clip-path="url(#wedge)" fill="${k ? 'var(--shiro)' : 'var(--kihada)'}"/></g>`).join('') +
         `<path d="M${P(a0)}L${cx} ${cy}L${P(a0 + w)}" fill="none" stroke="var(--kihada)" stroke-width="5" stroke-dasharray="10 8"/>`;
       [...over.querySelectorAll('.cp')].forEach((g, k) => {
         if (!k) return;
-        g.animate([{ transform: `rotate(${(k - 1) * w}deg)`, opacity: 0 }, { transform: `rotate(${k * w}deg)`, opacity: 1 }], { duration: reduced ? 0 : 600, delay: reduced ? 0 : 500 + k * (n > 12 ? 60 : 380), easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
+        run((t) => { const e = easeIO(t); g.setAttribute('transform', `rotate(${((k - 1 + e) * w).toFixed(2)} ${cx} ${cy})`); g.setAttribute('opacity', e.toFixed(3)); }, 600, 500 + k * (n > 12 ? 60 : 380));
       });
-      cap.innerHTML = sym.n === Infinity ? 'Any thin slice is the whole crest: a circle looks the same at every angle.' : `The yellow wedge is ${Math.round(w)}° of the crest. Turn it ${n} times and you have the whole thing.${sym.axes.length >= n ? ' Each wedge is also mirror-symmetric, so the true unit is half a wedge.' : ''}`;
+      cap.innerHTML = sym.n === Infinity ? 'A circle: any slice is the whole.' : `${Math.round(w)}°, turned ${n} times.${sym.axes.length >= n ? ' Each wedge mirrors itself, so the true unit is half of one.' : ''}`;
     } else if (sym.axes.length) {
       pcsG.style.opacity = 0.12;
       const ax = sym.axes[0];
       over.innerHTML = `<clipPath id="half"><rect x="${cx}" y="-200" width="900" height="1400"/></clipPath>
-        <g style="transform-origin:${cx}px ${cy}px;transform-box:view-box;transform:rotate(${ax - 90}deg)"><use href="#pcs" clip-path="url(#half)" fill="var(--kihada)"/><g class="mir" style="transform-origin:${cx}px ${cy}px;transform-box:view-box"><use href="#pcs" clip-path="url(#half)" fill="var(--shiro)"/></g>
+        <g transform="rotate(${ax - 90} ${cx} ${cy})"><use href="#pcs" clip-path="url(#half)" fill="var(--kihada)"/><g class="mir" opacity="0.2"><use href="#pcs" clip-path="url(#half)" fill="var(--shiro)"/></g>
         <line x1="${cx}" y1="-120" x2="${cx}" y2="1120" stroke="var(--aobana)" stroke-width="5" stroke-dasharray="14 10"/></g>`;
-      $('.mir', over).animate([{ transform: 'scaleX(1)', opacity: 0.2 }, { transform: 'scaleX(-1)', opacity: 1 }], { duration: reduced ? 0 : 1200, delay: reduced ? 0 : 500, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
-      cap.textContent = 'Only one mirror axis. The yellow half, flipped across the blue line, gives you the other half.';
+      const mir = $('.mir', over);
+      run((t) => { const e = easeIO(t); mir.setAttribute('transform', `translate(${cx} 0) scale(${(1 - 2 * e).toFixed(3)} 1) translate(${-cx} 0)`); mir.setAttribute('opacity', (0.2 + 0.8 * e).toFixed(3)); }, 1200, 500);
+      cap.textContent = 'One mirror axis.';
     } else {
-      cap.textContent = 'No part repeats exactly, so the whole crest is its own unit. Crests like this were drawn freehand, not built up from a repeated wedge.';
+      cap.textContent = 'Nothing repeats: drawn freehand.';
     }
   }
   if (s === 'compass' && c.recipe) {
     pcsG.style.opacity = 0.16;
     over.innerHTML = `<g transform="translate(500 500)"><svg x="-500" y="-500" width="1000" height="1000" viewBox="-500 -500 1000 1000" overflow="visible" id="cmp">${crestMarkup(c.recipe, { guides: true })}</svg></g>`;
     animateConstruction($('#cmp', over), { speed: 1.4, keepGuides: 0.35 });
-    cap.innerHTML = `A rebuild using only circles and straight lines, the way crest painters lay them out. The faint shape underneath is the original. <button id="to-ws" class="text-btn">Open in the workshop</button>`;
+    cap.innerHTML = `Circles and straight lines only; the faint shape is the original. <button id="to-ws" class="text-btn">Open in the workshop</button>`;
     $('#to-ws').onclick = () => { ws.set({ ...DEFAULT, ...c.recipe }); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 700); };
   }
 }
@@ -392,21 +410,27 @@ const ws = (() => {
     const units = b.guides.filter((g) => g.step === 'motif' && g.c).map((g) => ({ x: g.c[0], y: g.c[1], s: g.c[2] }));
     const ctr = b.guides.find((g) => g.step === 'layout' && g.c)?.c || [0, spec.dy * 400];
     const best = (score, fx, fy) => (units.length ? units.reduce((a, u) => (score(u) > score(a) ? u : a)) : { x: fx, y: fy, s: 60 });
-    const tl = best((u) => -u.x - u.y, -150, -150), tr = best((u) => u.x - u.y, 150, -150), rm = best((u) => u.x - Math.abs(u.y) * 0.3, 160, 0), br = best((u) => u.x + u.y, 150, 150);
+    const tl = best((u) => -u.x - u.y, -150, -150), tr = best((u) => u.x - u.y, 150, -150), br = best((u) => u.x + u.y, 150, 150);
+    // targets on each side run top to bottom in the same order as their notes, so no two lines cross
+    const R = spec.enclosure === 'none' ? 300 : 436, ey = (tl.y + ctr[1]) / 2;
     const T = {
       motif: [tl.x, tl.y],
-      enc: spec.enclosure === 'none' ? [-300, 0] : [-436, 0],
+      enc: [-Math.sqrt(Math.max(0, R * R - ey * ey)), ey],
       cs: [ctr[0], ctr[1]],
       count: [tr.x, tr.y],
-      r: units.length ? [(ctr[0] + rm.x) / 2, (ctr[1] + rm.y) / 2] : [rm.x, rm.y],
+      r: units.length ? [(ctr[0] + br.x) / 2, (ctr[1] + br.y) / 2] : [br.x, 0],
       size: [br.x + br.s * 0.6, br.y + br.s * 0.6],
     };
     const to = (x, y) => { const p = new DOMPoint(x, y).matrixTransform(ctm); return [p.x - box.left, p.y - box.top]; };
+    // each line leaves its label, drops down its own lane beside the notes, then runs in to its point;
+    // upper notes take the lanes nearer the crest
     leaders.innerHTML = [...sketch.querySelectorAll('.note')].map((n) => {
       const lab = n.querySelector('.note-label').getBoundingClientRect(), left = n.classList.contains('l');
+      const k = n.classList.contains('n1') ? 2 : n.classList.contains('n2') ? 1 : 0;
       const ax = (left ? lab.right + 16 : lab.left - 16) - box.left, ay = lab.top + lab.height / 2 - box.top;
+      const lane = ax + (left ? 1 : -1) * (16 + k * 16);
       const [tx, ty] = to(...T[n.dataset.note]);
-      return `<g data-for="${n.dataset.note}"><path d="M${f1(ax)} ${f1(ay)}H${f1(tx)}V${f1(ty)}"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="6"/></g>`;
+      return `<g data-for="${n.dataset.note}"><path d="M${f1(ax)} ${f1(ay)}H${f1(lane)}V${f1(ty)}H${f1(tx)}"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="6"/></g>`;
     }).join('');
   }
 
@@ -450,28 +474,28 @@ function weaveCell(s) {
   return `<button type="button" class="turn" style="--deg:${turnOf(b.spec)}deg" aria-label="${b.name.en}: open in the workshop"><svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg></button>`;
 }
 function weave() {
-  const el = $('#weave'), n = 12;
-  const specs = Array.from({ length: n * 2 }, (_, i) => randomSpec(seed + i * 7919));
-  const row = (r) => `<div class="row">${specs.slice(r * n, r * n + n).map((s, i) => `<span class="cell" style="--d:${(i + r * 3) * 45}ms;transform:rotate(${spins * 360}deg)" data-i="${r * n + i}">${weaveCell(s)}</span>`).join('')}</div>`;
-  el.innerHTML = row(0) + '<button type="button" class="again" aria-label="Draw new crests"><span></span><b>Draw again</b><i></i></button>' + row(1);
+  // two blocks of two rows on the 12-column grid; narrower screens show 8 or 4 columns (CSS hides the rest)
+  const el = $('#weave'), per = 24;
+  const specs = Array.from({ length: per * 2 }, (_, i) => randomSpec(seed + i * 7919));
+  const block = (b) => `<div class="row">${specs.slice(b * per, b * per + per).map((s, i) => `<span class="cell" style="--d:${((i % 12) + Math.floor(i / 12) * 3 + b * 6) * 40}ms;transform:rotate(${spins * 360}deg)" data-i="${b * per + i}">${weaveCell(s)}</span>`).join('')}</div>`;
+  el.innerHTML = block(0) + '<button type="button" class="again" aria-label="Draw new crests"><b>Draw again</b></button>' + block(1);
   el.querySelector('.again').onclick = again;
   el.onclick = (e) => {
     const t = e.target.closest('.turn'); if (!t) return;
-    const s = specs[+t.parentElement.dataset.i];
+    const s = el._specs[+t.parentElement.dataset.i];
     morph(t.querySelector('svg'), ws.svg, () => { ws.set(s); $('#workshop').scrollIntoView({ behavior: 'instant', block: 'start' }); });
     if (!document.startViewTransition || reduced) $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   };
+  el._specs = specs;
 }
 function again() {
   spins += 1;
-  $('#weave').querySelectorAll('.cell').forEach((c) => { c.style.transform = `rotate(${spins * 360}deg)`; });
+  const el = $('#weave');
+  el.querySelectorAll('.cell').forEach((c) => { c.style.transform = `rotate(${spins * 360}deg)`; });
   setTimeout(() => {
     seed = (Math.random() * 1e9) | 0;
-    const specs = Array.from({ length: 24 }, (_, i) => randomSpec(seed + i * 7919));
-    $('#weave').querySelectorAll('.cell').forEach((c, i) => { c.innerHTML = weaveCell(specs[i]); });
-    const el = $('#weave'), prev = el.onclick;
-    el.onclick = (e) => { const t = e.target.closest('.turn'); if (!t) return; const s = specs[+t.parentElement.dataset.i]; morph(t.querySelector('svg'), ws.svg, () => { ws.set(s); $('#workshop').scrollIntoView({ behavior: 'instant', block: 'start' }); }); if (!document.startViewTransition || reduced) $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); };
-    void prev;
+    el._specs = Array.from({ length: 48 }, (_, i) => randomSpec(seed + i * 7919));
+    el.querySelectorAll('.cell').forEach((c, i) => { c.innerHTML = weaveCell(el._specs[i]); });
   }, reduced ? 0 : 700);
 }
 
