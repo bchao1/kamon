@@ -1,5 +1,6 @@
-import { CLANS, MOTIF_LABEL, SIDE_LABEL } from './data.js';
-import { build, MOTIFS, ENCLOSURES, LAYOUTS, CENTERS, OVERLAYS, DEFAULT, randomSpec } from './grammar.js';
+import { CLANS } from './data.js';
+import { t, lang, setLang, onLang, LANGS, clanText, describeZh } from './i18n.js';
+import { build, MOTIFS, ENCLOSURES, LAYOUTS, CENTERS, OVERLAYS, DEFAULT, randomSpec, nameCount } from './grammar.js';
 import { crestMarkup, animateConstruction, crestFile, reduced } from './render.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -23,12 +24,8 @@ function symmetryOf(c) {
 }
 for (const c of CLANS) Object.assign(c, { data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
 
-const SYM_GROUPS = [
-  ['none', 'No symmetry', 'Drawn freehand'], ['mirror', 'Mirror', 'Left matches right'], ['r2', '2-fold', 'Same after a half turn'],
-  ['r3', '3-fold', 'Repeats every 120°'], ['r4', '4-fold', 'Repeats every 90°'], ['r5', '5-fold', 'Repeats every 72°'],
-  ['r6', '6-fold', 'Repeats every 60°'], ['r8', '8-fold', 'Repeats every 45°'], ['inf', 'Circle', 'Same at every angle'],
-];
-const symText = (s) => (s.n === Infinity ? 'Same at every angle' : s.n > 1 ? `${s.n}-fold rotation` + (s.axes.length ? `, ${s.axes.length} mirror ${s.axes.length > 1 ? 'axes' : 'axis'}` : '') : s.axes.length ? 'One mirror axis' : 'None');
+const SYM_KEYS = ['none', 'mirror', 'r2', 'r3', 'r4', 'r5', 'r6', 'r8', 'inf'];
+const symText = (s) => (s.n === Infinity ? t('symInf') : s.n > 1 ? t('symRot', s.n, s.axes.length) : s.axes.length ? t('symOneMirror') : t('symNone'));
 
 // ---------- small svg builders ----------
 // overlap is stretched from its own minimum to 1 so every crest's peaks read clearly
@@ -36,13 +33,14 @@ const fpPath = (rot, r0 = 520, k = 95) => { const lo = Math.min(...rot); return 
 const crestPath = (c) => `<path d="${c.data.d}" fill-rule="evenodd" fill="var(--shiro)"/>`;
 
 // ================= HERO =================
+let heroClan = null;
 async function hero() {
   const svg = $('#hero-svg'), cap = $('#hero-cap');
   const seq = ['hosokawa', 'akechi', 'chosokabe', 'tokugawa', 'maeda', 'takeda', 'sanada', 'mori'].map((k) => BY_KEY[k]);
   for (let i = 0; ; i = (i + 1) % seq.length) {
     const c = seq[i];
     svg.innerHTML = crestMarkup(c.recipe, { guides: true });
-    cap.innerHTML = `<b>${c.mon}</b>${c.monEn}, the ${c.houseEn} crest`;
+    heroClan = c; cap.innerHTML = t('heroCap', clanText(c));
     await animateConstruction(svg, { speed: 1, keepGuides: 0.18 });
     if (reduced) return;
     await sleep(2600);
@@ -58,17 +56,24 @@ function initBoard() {
   for (const c of CLANS) {
     const b = document.createElement('button');
     b.className = 'tile'; b.dataset.key = c.key;
-    b.setAttribute('aria-label', `${c.houseEn}: ${c.monEn}`);
-    b.innerHTML = `<svg viewBox="-130 -130 1260 1260" aria-hidden="true"><g class="fp"><circle cx="500" cy="500" r="520" fill="none" stroke="#2c4170" stroke-width="3"/><path d="${fpPath(c.data.rot)}" fill="none" stroke="var(--kihada)" stroke-width="12" stroke-linejoin="round"/></g><g class="crest">${crestPath(c)}</g></svg><span class="lbl"><b>${c.house}</b>${c.houseEn}</span>`;
+    b.innerHTML = `<svg viewBox="-130 -130 1260 1260" aria-hidden="true"><g class="fp"><circle cx="500" cy="500" r="520" fill="none" stroke="#2c4170" stroke-width="3"/><path d="${fpPath(c.data.rot)}" fill="none" stroke="var(--kihada)" stroke-width="12" stroke-linejoin="round"/></g><g class="crest">${crestPath(c)}</g></svg><span class="lbl"></span>`;
     b.onclick = () => openAnatomy(c.key, true);
     board.append(b);
   }
+  relabelTiles();
   document.querySelectorAll('.seg button').forEach((btn) => btn.onclick = () => {
     mode = btn.dataset.mode;
     document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', x === btn));
     layout();
   });
   new ResizeObserver(() => layout()).observe(board);
+}
+function relabelTiles() {
+  for (const b of board.querySelectorAll('.tile')) {
+    const c = clanText(BY_KEY[b.dataset.key]);
+    b.setAttribute('aria-label', `${c.houseEn} ${c.house}: ${c.mon}`);
+    b.querySelector('.lbl').innerHTML = `<b lang="${lang === 'zh' ? 'zh-Hant' : 'ja'}">${c.house}</b>${c.houseEn}`;
+  }
 }
 function layout() {
   board.dataset.mode = mode;
@@ -82,7 +87,7 @@ function layout() {
     board.style.height = `${Math.ceil(tiles.length / cols) * (tileH + gap)}px`;
     return;
   }
-  const groups = mode === 'symmetry' ? SYM_GROUPS : mode === 'motif' ? Object.entries(MOTIF_LABEL).map(([k, v]) => [k, v, '']) : Object.entries(SIDE_LABEL).map(([k, v]) => [k, v, '']);
+  const groups = mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...t('symGroups')[k]]) : Object.entries(t(mode === 'motif' ? 'motifGroups' : 'sides')).map(([k, v]) => [k, v, '']);
   const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : mode === 'motif' ? c.motif : c.side);
   const biggest = Math.max(...groups.map(([gk]) => CLANS.filter((c) => keyOf(c) === gk).length));
   const narrow = W < 700, L = narrow ? 0 : 220, t = narrow ? Math.min(110, (W - gap * 2) / 3) : Math.max(96, Math.min(132, (W - L) / biggest - gap)), per = Math.max(1, Math.floor((W - L + gap) / (t + gap)));
@@ -92,7 +97,7 @@ function layout() {
     if (!members.length) continue;
     const lab = document.createElement('div');
     lab.className = 'row-label';
-    const subText = sub || (mode === 'side' && gk === 'fallen' ? 'Destroyed in 1560–1590' : `${members.length} ${members.length > 1 ? 'houses' : 'house'}`);
+    const subText = sub || (mode === 'side' && gk === 'fallen' ? t('destroyedRange') : t('houses', members.length));
     lab.innerHTML = `<b>${name}</b><span>${subText}</span>`;
     lab.style.transform = `translate(0, ${y + (narrow ? 0 : t * 0.3)}px)`;
     board.append(lab);
@@ -118,7 +123,7 @@ function openAnatomy(key, scroll) {
   $('#steps [data-step="compass"]').disabled = !cur.recipe;
   if (step === 'compass' && !cur.recipe) step = 'whole';
   stage.setAttribute('viewBox', '-130 -130 1260 1260');
-  stage.setAttribute('aria-label', `${cur.monEn}, crest of the ${cur.houseEn}`);
+  stage.setAttribute('aria-label', t('stageAria', clanText(cur)));
   stage.innerHTML = `<defs><g id="pcs">${cur.data.pieces.map((p) => `<path d="${p.d}" fill-rule="evenodd"/>`).join('')}</g></defs>
     <g id="L-under"></g>
     <g id="L-pieces">${cur.data.pieces.map((p, i) => `<path class="pc" data-i="${i}" d="${p.d}" fill-rule="evenodd" pathLength="1" style="fill:var(--shiro);transition:transform .9s cubic-bezier(.6,0,.2,1), fill .6s, opacity .6s"/>`).join('')}</g>
@@ -127,27 +132,27 @@ function openAnatomy(key, scroll) {
   if (scroll) $('#anatomy').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
 }
 function renderInfo() {
-  const c = cur, d = c.data, groups = groupStats(d);
+  const c = clanText(cur), d = c.data, groups = groupStats(d), en = lang === 'en';
   $('#info').innerHTML = `
     <p class="tategaki" aria-hidden="true">${c.mon}</p>
     <div>
-      <h3>${c.houseEn} <span lang="ja">${c.house}</span></h3>
-      <p class="romaji">${c.monEn}</p>
+      <h3>${en ? `${c.houseEn} <span lang="ja">${c.house}</span>` : `${c.house} <span>${c.houseEn}</span>`}</h3>
+      <p class="romaji">${c.read}</p>
       <p class="gloss">${c.gloss}</p>
       <dl class="facts">
-        <dt>Lord</dt><dd>${c.lord}</dd>
-        <dt>Province</dt><dd>${c.province}</dd>
-        <dt>In 1600</dt><dd>${c.side === 'fallen' ? `Destroyed in ${c.fell}` : SIDE_LABEL[c.side]}</dd>
+        <dt>${t('lord')}</dt><dd>${c.lord}</dd>
+        <dt>${t('province')}</dt><dd>${c.province}</dd>
+        <dt>${t('in1600')}</dt><dd>${c.side === 'fallen' ? t('destroyed', c.fell) : t('sides')[c.side]}</dd>
       </dl>
       <p class="note">${c.note}</p>
       <div class="stats">
-        <div class="stat"><b>${d.components}</b><span>separate pieces of ink</span></div>
-        <div class="stat"><b>${c.sym.n === Infinity ? '∞' : c.sym.n > 1 ? `${c.sym.n}×` : c.sym.axes.length ? 'Mirror' : 'None'}</b><span>${c.sym.n > 1 || c.sym.n === Infinity ? 'rotational symmetry' : 'symmetry'}</span></div>
-        <div class="stat"><b>${Math.round(d.ink * 100)}%</b><span>of its square is ink</span></div>
+        <div class="stat"><b>${d.components}</b><span>${t('statPieces')}</span></div>
+        <div class="stat"><b>${c.sym.n === Infinity ? '∞' : c.sym.n > 1 ? `${c.sym.n}×` : c.sym.axes.length ? t('mirror') : t('none')}</b><span>${c.sym.n > 1 || c.sym.n === Infinity ? t('statRot') : t('statSym')}</span></div>
+        <div class="stat"><b>${Math.round(d.ink * 100)}%</b><span>${t('statInk')}</span></div>
       </div>
-      <p class="credit">Source: <a href="${c.credit.page}">${c.credit.file}</a> by ${c.credit.artist || c.credit.uploader}, ${c.credit.license}. Re-traced here.</p>
+      <p class="credit">${t('credit', c.credit)}</p>
     </div>
-    <div class="strip" role="group" aria-label="Choose a crest">${CLANS.map((x) => `<button data-key="${x.key}" aria-label="${x.houseEn}" aria-current="${x.key === c.key}"><svg viewBox="0 0 1000 1000">${crestPath(x)}</svg></button>`).join('')}</div>`;
+    <div class="strip" role="group" aria-label="${t('choose')}">${CLANS.map((x) => `<button data-key="${x.key}" aria-label="${clanText(x).house} ${x.houseEn}" aria-current="${x.key === c.key}"><svg viewBox="0 0 1000 1000">${crestPath(x)}</svg></button>`).join('')}</div>`;
   $('#info .strip').onclick = (e) => { const b = e.target.closest('button'); if (b) openAnatomy(b.dataset.key, false); };
   void groups;
 }
@@ -165,10 +170,10 @@ function setStep(s, fresh) {
   pcsG.style.opacity = 1;
   const pcs = [...stage.querySelectorAll('.pc')];
   pcs.forEach((p) => { p.style.transform = ''; p.style.fill = 'var(--shiro)'; });
-  const c = cur, d = c.data, [cx, cy] = d.centroid, sym = c.sym, cap = $('#step-cap');
+  const c = clanText(cur), d = c.data, [cx, cy] = d.centroid, sym = c.sym, cap = $('#step-cap');
 
   if (s === 'whole') {
-    cap.textContent = `${c.mon}, ${c.monEn}. ${c.gloss}.`;
+    cap.textContent = t('capWhole', c);
     if (fresh || true) pcs.forEach((p, i) => p.animate([{ fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 1 }, { fillOpacity: 0, stroke: 'var(--shiro)', strokeWidth: 4, strokeDasharray: '1 1', strokeDashoffset: 0, offset: 0.7 }, { fillOpacity: 1, strokeWidth: 0, strokeDasharray: '1 1', strokeDashoffset: 0 }], { duration: reduced ? 0 : 1100, delay: reduced ? 0 : Math.min(i * 40, 1200), easing: 'ease-in-out', fill: 'both' }));
   }
   if (s === 'pieces') {
@@ -181,8 +186,8 @@ function setStep(s, fresh) {
       if (color.has(p)) el.style.fill = color.get(p);
     }));
     const singles = d.pieces.filter((p) => p.group == null && !p.dust).length, dust = d.pieces.find((p) => p.dust);
-    cap.innerHTML = `${d.components} separate pieces of ink, pulled apart. Pieces with the same area share a colour: the shapes the painter repeated.` +
-      `<span class="legend">${groups.slice(0, 6).map((g, gi) => `<span><i style="background:${GROUP_COLORS[gi]}"></i>${g.length} matching</span>`).join('')}${singles ? `<span><i style="background:var(--shiro)"></i>${singles} unique</span>` : ''}${dust ? `<span>${dust.dust} tiny details</span>` : ''}</span>`;
+    cap.innerHTML = t('capPieces', d.components) +
+      `<span class="legend">${groups.slice(0, 6).map((g, gi) => `<span><i style="background:${GROUP_COLORS[gi]}"></i>${t('matching', g.length)}</span>`).join('')}${singles ? `<span><i style="background:var(--shiro)"></i>${t('unique', singles)}</span>` : ''}${dust ? `<span>${t('tiny', dust.dust)}</span>` : ''}</span>`;
   }
   if (s === 'symmetry') {
     over.innerHTML = `<circle cx="500" cy="500" r="520" fill="none" stroke="#2c4170" stroke-width="2"/><circle cx="500" cy="500" r="615" fill="none" stroke="#2c4170" stroke-width="2" stroke-dasharray="4 8"/>
@@ -202,8 +207,8 @@ function setStep(s, fresh) {
         ghost.animate(sym.n === Infinity ? [{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }] : frames.flatMap((f, k) => k === 0 ? [f] : [{ ...f, offset: f.offset - 0.5 / n }, f]).map((f, i, a) => ({ ...f, offset: i === 0 ? 0 : i === a.length - 1 ? 1 : f.offset })), { duration: (sym.n === Infinity ? 6 : sym.n * 1.4) * 1000, iterations: Infinity, easing: 'cubic-bezier(.6,0,.3,1)' });
       }
     }
-    const peaks = sym.n > 1 && sym.n !== Infinity ? `It peaks every ${Math.round(360 / sym.n)}°.` : '';
-    cap.innerHTML = `The yellow line shows how much the crest overlaps itself as it turns through 360°: further out means a closer match. ${peaks} Blue dashes mark mirror axes. Result: <b>${symText(sym)}</b>.`;
+    const peaks = sym.n > 1 && sym.n !== Infinity ? t('peaks', Math.round(360 / sym.n)) : '';
+    cap.innerHTML = t('capSym', peaks, symText(sym));
   }
   if (s === 'unit') {
     const n = sym.n === Infinity ? 36 : sym.n;
@@ -218,7 +223,7 @@ function setStep(s, fresh) {
         if (!k) return;
         g.animate([{ transform: `rotate(${(k - 1) * w}deg)`, opacity: 0 }, { transform: `rotate(${k * w}deg)`, opacity: 1 }], { duration: reduced ? 0 : 600, delay: reduced ? 0 : 500 + k * (n > 12 ? 60 : 380), easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
       });
-      cap.innerHTML = sym.n === Infinity ? 'Any thin slice is the whole crest: a circle looks the same at every angle.' : `The yellow wedge is ${Math.round(w)}° of the crest. Turn it ${n} times and you have the whole thing.${sym.axes.length >= n ? ' Each wedge is also mirror-symmetric, so the true unit is half a wedge.' : ''}`;
+      cap.innerHTML = sym.n === Infinity ? t('unitInf') : t('unitWedge', Math.round(w), n, sym.axes.length >= n);
     } else if (sym.axes.length) {
       pcsG.style.opacity = 0.12;
       const ax = sym.axes[0];
@@ -226,16 +231,16 @@ function setStep(s, fresh) {
         <g style="transform-origin:${cx}px ${cy}px;transform-box:view-box;transform:rotate(${ax - 90}deg)"><use href="#pcs" clip-path="url(#half)" fill="var(--kihada)"/><g class="mir" style="transform-origin:${cx}px ${cy}px;transform-box:view-box"><use href="#pcs" clip-path="url(#half)" fill="var(--shiro)"/></g>
         <line x1="${cx}" y1="-120" x2="${cx}" y2="1120" stroke="var(--aobana)" stroke-width="3" stroke-dasharray="14 10"/></g>`;
       $('.mir', over).animate([{ transform: 'scaleX(1)', opacity: 0.2 }, { transform: 'scaleX(-1)', opacity: 1 }], { duration: reduced ? 0 : 1200, delay: reduced ? 0 : 500, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
-      cap.textContent = 'Only one mirror axis. The yellow half, flipped across the blue line, gives you the other half.';
+      cap.textContent = t('unitMirror');
     } else {
-      cap.textContent = 'No part repeats exactly, so the whole crest is its own unit. Crests like this were drawn freehand, not built up from a repeated wedge.';
+      cap.textContent = t('unitNone');
     }
   }
   if (s === 'compass' && c.recipe) {
     pcsG.style.opacity = 0.16;
     over.innerHTML = `<g transform="translate(500 500)"><svg x="-500" y="-500" width="1000" height="1000" viewBox="-500 -500 1000 1000" overflow="visible" id="cmp">${crestMarkup(c.recipe, { guides: true })}</svg></g>`;
     animateConstruction($('#cmp', over), { speed: 1.4, keepGuides: 0.35 });
-    cap.innerHTML = `A rebuild using only circles and straight lines, the way crest painters lay them out. The faint shape underneath is the original. <button id="to-ws">Open in the workshop</button>`;
+    cap.innerHTML = `${t('capCompass')} ${c.fit ? t('match', Math.round(c.fit * 100)) : ''} <button id="to-ws">${t('toWs')}</button>`;
     $('#to-ws').onclick = () => { ws.set({ ...DEFAULT, ...c.recipe }); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 700); };
   }
 }
@@ -249,31 +254,37 @@ const ws = (() => {
   const motifSpec = (k) => ({ enclosure: 'none', layout: 'single', motif: k, size: 0.85, aspect: k === 'uroko' ? 0.866 : 0.75, center: 'none' });
   const encSpec = (k) => ({ enclosure: k, layout: 'single', motif: k === 'none' ? 'hoshi' : 'none', size: 0.3, lobes: 4 });
   const slider = (key, label, min, max, st) => `<label class="ctl" data-for="${key}"><span>${label}<output></output></span><input type="range" name="${key}" min="${min}" max="${max}" step="${st}"></label>`;
-  form.innerHTML = `
-    <div class="ctl"><span>Motif</span><div class="picker" data-pick="motif">${Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(motifSpec(k))}${MOTIFS[k].en}</button>`).join('')}</div></div>
-    <div class="ctl"><span>Arrangement</span><div class="seg" data-pick="layout">${Object.entries(LAYOUTS).map(([k, v]) => `<button type="button" data-v="${k}" aria-pressed="false">${v}</button>`).join('')}</div></div>
-    ${slider('n', 'How many', 1, 12, 1)}${slider('rows', 'Rows', 1, 4, 1)}${slider('cols', 'Columns', 1, 4, 1)}
-    ${slider('r', 'Distance from centre', 0, 0.9, 0.01)}${slider('size', 'Motif size', 0.05, 1, 0.01)}${slider('rot', 'Turn', 0, 180, 1)}${slider('aspect', 'Stretch', 0.4, 1.6, 0.01)}${slider('dy', 'Shift down', -0.4, 0.4, 0.01)}
-    <div class="ctl"><span>Enclosure</span><div class="picker" data-pick="enclosure">${Object.keys(ENCLOSURES).map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(encSpec(k))}${k === 'none' ? 'none' : ENCLOSURES[k].en.replace(/^in an? /, '').replace('tortoiseshell ', '').replace(' outline', '')}</button>`).join('')}</div></div>
-    ${slider('lobes', 'Quince lobes', 4, 8, 1)}
-    <label class="ctl" data-for="center"><span>Centre</span><select name="center">${Object.entries(CENTERS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
-    ${slider('centerSize', 'Centre size', 0.03, 0.5, 0.01)}
-    <label class="ctl"><span>Overlay</span><select name="overlay">${Object.entries(OVERLAYS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
-    <div class="ctl"><span>Style</span><div class="seg" data-pick="style"><button type="button" data-v="hinata" aria-pressed="false">Solid (hinata)</button><button type="button" data-v="kage" aria-pressed="false">Outline (kage)</button></div></div>`;
-  form.addEventListener('click', (e) => { const b = e.target.closest('[data-pick] button'); if (!b) return; set({ ...spec, [b.parentElement.dataset.pick]: b.dataset.v }); });
+  const renderForm = () => { form.innerHTML = `
+    <div class="ctl"><span>${t('cMotif')}</span><div class="picker" data-pick="motif">${Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(motifSpec(k))}${t('motifs')[k]}</button>`).join('')}</div></div>
+    <div class="ctl"><span>${t('cLayout')}</span><div class="seg" data-pick="layout">${Object.keys(LAYOUTS).map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${t('layouts')[k]}</button>`).join('')}</div></div>
+    ${slider('n', t('cN'), 1, 12, 1)}${slider('rows', t('cRows'), 1, 4, 1)}${slider('cols', t('cCols'), 1, 4, 1)}
+    ${slider('r', t('cR'), 0, 0.9, 0.01)}${slider('size', t('cSize'), 0.05, 1, 0.01)}${slider('rot', t('cRot'), 0, 180, 1)}${slider('aspect', t('cAspect'), 0.4, 1.6, 0.01)}${slider('dy', t('cDy'), -0.4, 0.4, 0.01)}
+    <div class="ctl"><span>${t('cEnc')}</span><div class="picker" data-pick="enclosure">${Object.keys(ENCLOSURES).map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(encSpec(k))}${t('encs')[k]}</button>`).join('')}</div></div>
+    ${slider('lobes', t('cLobes'), 4, 8, 1)}
+    <label class="ctl" data-for="center"><span>${t('cCenter')}</span><select name="center">${Object.keys(CENTERS).map((k) => `<option value="${k}">${t('centers')[k]}</option>`).join('')}</select></label>
+    ${slider('centerSize', t('cCenterSize'), 0.03, 0.5, 0.01)}
+    <label class="ctl"><span>${t('cOverlay')}</span><select name="overlay">${Object.keys(OVERLAYS).map((k) => `<option value="${k}">${t('overlays')[k]}</option>`).join('')}</select></label>
+    <div class="ctl"><span>${t('cStyle')}</span><div class="seg" data-pick="style"><button type="button" data-v="hinata" aria-pressed="false">${t('hinata')}</button><button type="button" data-v="kage" aria-pressed="false">${t('kage')}</button></div></div>`; };
+  renderForm();
+  form.addEventListener('click', (e) => { const b = e.target.closest('[data-pick] button'); if (!b) return; const k = b.parentElement.dataset.pick, next = { ...spec, [k]: b.dataset.v };
+    // settings tuned for one historical crest don't carry over to a different enclosure or motif
+    if (k === 'enclosure') for (const x of ['ringW', 'innerRing', 'clip', 'mokkoFill', 'lobeR', 'holeR']) delete next[x];
+    if (k === 'motif') for (const x of ['spin', 'centerSpin']) delete next[x];
+    set(next); });
   form.addEventListener('input', (e) => { const el = e.target; if (!el.name) return; set({ ...spec, [el.name]: el.type === 'range' ? +el.value : el.value }); });
   function sync() {
     form.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', spec[p.dataset.pick] === b.dataset.v)));
     form.querySelectorAll('input, select').forEach((el) => { if (el.name in spec) { el.value = spec[el.name]; const o = el.closest('label')?.querySelector('output'); if (o) o.textContent = el.name === 'rot' ? `${spec.rot}°` : (+spec[el.name]).toFixed(el.step < 1 ? 2 : 0); } });
-    const show = { n: spec.layout === 'ring', rows: spec.layout === 'grid', cols: spec.layout === 'grid', r: spec.layout === 'ring', rot: spec.layout === 'ring' || spec.layout === 'single', aspect: ['hishi', 'uroko'].includes(spec.motif), lobes: spec.enclosure === 'mokko', center: spec.layout === 'ring', centerSize: spec.layout === 'ring' && spec.center !== 'none', dy: spec.layout !== 'ring' || true };
+    const show = { n: spec.layout === 'ring', rows: spec.layout === 'grid', cols: spec.layout === 'grid', r: spec.layout === 'ring', rot: spec.layout === 'ring' || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko', center: spec.layout === 'ring', centerSize: spec.layout === 'ring' && spec.center !== 'none', dy: spec.layout !== 'ring' || true };
     form.querySelectorAll('[data-for]').forEach((el) => (el.hidden = show[el.dataset.for] === false));
   }
   function set(s) {
     spec = { ...DEFAULT, ...s };
     const b = build(spec);
     svg.innerHTML = crestMarkup(b, { guides: $('#ws-guides').checked });
-    svg.setAttribute('aria-label', `${b.name.en}`);
-    $('#ws-name').innerHTML = `<p class="tategaki" lang="ja">${b.name.jp}</p><p class="ro">${b.name.ro}</p><p class="en">${b.name.en}</p>`;
+    const sub = lang === 'en' ? b.name.en : lang === 'zh' ? describeZh(spec, nameCount(spec)) : '';
+    svg.setAttribute('aria-label', sub || b.name.jp);
+    $('#ws-name').innerHTML = `<p class="tategaki" lang="ja">${b.name.jp}</p><p class="ro">${b.name.ro}</p>${sub ? `<p class="en">${sub}</p>` : ''}`;
     sync();
   }
   async function draw() {
@@ -290,16 +301,18 @@ const ws = (() => {
     a.download = `kamon-${build(spec).name.ro.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.svg`;
     a.click();
   };
-  return { set, draw, get: () => spec };
+  return { set, draw, get: () => spec, relabel: () => { renderForm(); set(spec); } };
 })();
 
+let fieldSeed = 1600;
 function field(seed0) {
+  fieldSeed = seed0;
   const el = $('#field');
   el.innerHTML = '';
   for (let i = 0; i < 24; i++) {
     const spec = randomSpec(seed0 + i * 7919), b = build(spec);
     const btn = document.createElement('button');
-    btn.setAttribute('aria-label', `${b.name.en}: open in workshop`);
+    btn.setAttribute('aria-label', t('openWs', lang === 'en' ? b.name.en : lang === 'zh' ? describeZh(spec, nameCount(spec)) : b.name.jp));
     btn.innerHTML = `<svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(b)}</svg><span lang="ja">${b.name.jp}</span>`;
     btn.onclick = () => { ws.set(spec); $('#workshop').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); setTimeout(() => ws.draw(), reduced ? 0 : 600); };
     el.append(btn);
@@ -307,7 +320,23 @@ function field(seed0) {
 }
 $('#field-again').onclick = () => field((Math.random() * 1e9) | 0);
 
+// ---------- language ----------
+function applyStatic() {
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n)));
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  const sw = $('#lang-switch');
+  sw.setAttribute('aria-label', t('langLabel'));
+  sw.innerHTML = LANGS.map(([k, label]) => `<button type="button" data-lang="${k}" lang="${k === 'zh' ? 'zh-Hant' : k}" aria-pressed="${k === lang}">${label}</button>`).join('');
+}
+$('#lang-switch').onclick = (e) => { const b = e.target.closest('button'); if (b) setLang(b.dataset.lang); };
+onLang(() => {
+  applyStatic(); relabelTiles(); layout(); renderInfo(); setStep(step); ws.relabel(); field(fieldSeed);
+  if (heroClan) $('#hero-cap').innerHTML = t('heroCap', clanText(heroClan));
+});
+
 // ---------- boot ----------
+applyStatic();
 initBoard();
 layout();
 openAnatomy('oda', false);

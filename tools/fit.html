@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><body style="background:#13213f;color:#eee;font:13px sans-serif">
+<script type=module>
+// Scores each compass recipe against its original (IoU at 300px) and can hill-climb numeric params.
+// window.score(key, spec) → IoU; window.fit(key, keys, steps) → best spec.
+import {CLANS} from '../js/data.js'; import {build} from '../js/grammar.js'; import {crestMarkup} from '../js/render.js';
+document.head.insertAdjacentHTML('beforeend', '<link rel=stylesheet href=../css/style.css><style>body{display:flex;flex-wrap:wrap;gap:8px}figure{margin:0;width:480px;text-align:center}</style>');
+const D = await (await fetch('../data/crests.json')).json();
+const N = 300, cv = new OffscreenCanvas(N, N), cx = cv.getContext('2d', { willReadFrequently: true });
+function maskOf(drawFn) {
+  cx.setTransform(1, 0, 0, 1, 0, 0); cx.clearRect(0, 0, N, N); cx.setTransform(N / 1000, 0, 0, N / 1000, N / 2, N / 2);
+  drawFn(); const a = cx.getImageData(0, 0, N, N).data, m = new Uint8Array(N * N);
+  for (let i = 0; i < N * N; i++) m[i] = a[i * 4 + 3] > 127; return m;
+}
+const orig = {};
+function origMask(k) { return orig[k] ??= maskOf(() => { cx.translate(-500, -500); cx.fillStyle = '#000'; cx.fill(new Path2D(D[k].d), 'evenodd'); }); }
+export function recipeMask(spec) {
+  const b = build(spec), kage = b.spec.style === 'kage';
+  return maskOf(() => { for (const p of b.parts) { cx.save(); if (p.clip) { cx.beginPath(); cx.arc(0, b.clipY, b.clip, 0, 7); cx.clip(); } cx.fillStyle = '#000'; cx.fill(new Path2D(p.d), 'evenodd');
+    cx.save(); cx.globalCompositeOperation = 'destination-out'; cx.lineCap = 'round'; cx.lineWidth = p.stroke || 9; for (const q of p.paper || []) cx.stroke(new Path2D(q)); cx.restore(); cx.restore(); } });
+}
+function iou(a, b) { let i = 0, u = 0; for (let k = 0; k < a.length; k++) { i += a[k] & b[k]; u += a[k] | b[k]; } return i / u; }
+window.score = (k, spec) => iou(origMask(k), recipeMask(spec ?? CLANS.find((c) => c.key === k).recipe));
+window.scores = () => Object.fromEntries(CLANS.filter((c) => c.recipe).map((c) => [c.key, +score(c.key).toFixed(3)]));
+const get = (o, p) => p.split('.').reduce((a, k) => a?.[k], o) ?? 0;
+const set = (o, p, v) => { o = structuredClone(o); const ks = p.split('.'); let t = o; for (const k of ks.slice(0, -1)) t = t[k]; t[ks.at(-1)] = v; return o; };
+window.fit = (k, spec, keys, rounds = 6) => {
+  let best = score(k, spec);
+  for (let r = 0; r < rounds; r++) {
+    const step = 0.08 / 2 ** r;
+    for (const p of keys) for (const dir of [1, -1]) {
+      for (;;) { const v = get(spec, p), big = /rot|spin|Spin/.test(p), t = set(spec, p, +(v + dir * (big ? step * 100 : step * Math.max(0.2, Math.abs(v)))).toFixed(4)); const s = score(k, t); if (s > best + 1e-4) { best = s; spec = t; } else break; }
+    }
+  }
+  return { best: +best.toFixed(3), spec };
+};
+// Diff view: cream = both, gold = only in the original (missing), red = only in the recipe (extra).
+window.view = (k, spec) => {
+  const a = origMask(k), b = recipeMask(spec), c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'), im = x.createImageData(N, N);
+  for (let i = 0; i < N * N; i++) { const col = a[i] && b[i] ? [238, 240, 234] : a[i] ? [226, 194, 92] : b[i] ? [220, 70, 60] : [19, 33, 63]; im.data.set([...col, 255], i * 4); }
+  x.putImageData(im, 0, 0); c.style.width = '480px';
+  const fig = document.createElement('figure'); fig.append(c); fig.insertAdjacentHTML('beforeend', `<figcaption>${k} ${score(k, spec).toFixed(3)}</figcaption>`); document.body.append(fig);
+};
+window.ready = true;
+</script>

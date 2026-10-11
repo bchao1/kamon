@@ -7,24 +7,25 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Ccircle r='48' fill='%2313213f'/%3E%3Ccircle r='40' fill='none' stroke='%23eef0ea' stroke-width='5'/%3E%3Cg fill='%23eef0ea'%3E%3Ccircle cy='-14' r='10'/%3E%3Ccircle cx='12' cy='7' r='10'/%3E%3Ccircle cx='-12' cy='7' r='10'/%3E%3C/g%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Noto+Serif+TC:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <div class="lang-switch" role="group" id="lang-switch"></div>
   <header class="hero">
     <div class="hero-type">
       <p class="tategaki hero-kanji" aria-hidden="true">家紋</p>
       <div>
-        <h1>Kamon, taken apart</h1>
-        <p class="lede">Twenty crests of the Sengoku houses, broken down into the compass strokes they were drawn with. Then a workshop where you can draw your own.</p>
+        <h1 data-i18n="title">Kamon, taken apart</h1>
+        <p class="lede" data-i18n="lede">Twenty crests of the Sengoku houses, broken down into the compass strokes they were drawn with. Then a workshop where you can draw your own.</p>
         <nav class="hero-nav">
-          <a href="#gallery">See the twenty houses</a>
-          <a href="#workshop">Draw a crest</a>
+          <a href="#gallery" data-i18n="navGallery">See the twenty houses</a>
+          <a href="#workshop" data-i18n="navWorkshop">Draw a crest</a>
         </nav>
       </div>
     </div>
     <figure class="hero-crest">
-      <svg id="hero-svg" viewBox="-500 -500 1000 1000" role="img" aria-label="A crest being drawn with compass and ruler"></svg>
+      <svg id="hero-svg" viewBox="-500 -500 1000 1000" role="img" data-i18n-aria="heroAria" aria-label="A crest being drawn with compass and ruler"></svg>
       <figcaption id="hero-cap"></figcaption>
     </figure>
   </header>
@@ -32,13 +33,13 @@
   <main>
     <section id="gallery" class="section">
       <div class="section-head">
-        <h2>Twenty houses</h2>
-        <p>Every crest here was worn into battle between 1560 and 1600. Re-sort them to see what they share, or pick one to take it apart.</p>
-        <div class="seg" role="group" aria-label="Arrange crests">
-          <button data-mode="grid" aria-pressed="true">By house</button>
-          <button data-mode="symmetry" aria-pressed="false">By symmetry</button>
-          <button data-mode="motif" aria-pressed="false">By motif</button>
-          <button data-mode="side" aria-pressed="false">At Sekigahara</button>
+        <h2 data-i18n="galleryH">Twenty houses</h2>
+        <p data-i18n="galleryP">Every crest here was worn into battle between 1560 and 1600. Re-sort them to see what they share, or pick one to take it apart.</p>
+        <div class="seg" role="group" data-i18n-aria="arrange" aria-label="Arrange crests">
+          <button data-mode="grid" aria-pressed="true" data-i18n="byHouse">By house</button>
+          <button data-mode="symmetry" aria-pressed="false" data-i18n="bySym">By symmetry</button>
+          <button data-mode="motif" aria-pressed="false" data-i18n="byMotif">By motif</button>
+          <button data-mode="side" aria-pressed="false" data-i18n="bySide">At Sekigahara</button>
         </div>
       </div>
       <div id="board" class="board"></div>
@@ -49,12 +50,12 @@
         <div class="stage-wrap">
           <svg id="stage" viewBox="0 0 1000 1000" role="img"></svg>
         </div>
-        <ol class="steps" id="steps" aria-label="Ways to take the crest apart">
-          <li><button data-step="whole">Whole</button></li>
-          <li><button data-step="pieces">Pieces</button></li>
-          <li><button data-step="symmetry">Symmetry</button></li>
-          <li><button data-step="unit">Unit</button></li>
-          <li><button data-step="compass">Compass</button></li>
+        <ol class="steps" id="steps" data-i18n-aria="stepsAria" aria-label="Ways to take the crest apart">
+          <li><button data-step="whole" data-i18n="sWhole">Whole</button></li>
+          <li><button data-step="pieces" data-i18n="sPieces">Pieces</button></li>
+          <li><button data-step="symmetry" data-i18n="sSym">Symmetry</button></li>
+          <li><button data-step="unit" data-i18n="sUnit">Unit</button></li>
+          <li><button data-step="compass" data-i18n="sCompass">Compass</button></li>
         </ol>
         <p class="step-cap" id="step-cap"></p>
       </div>
@@ -63,8 +64,8 @@
 
     <section id="workshop" class="section workshop">
       <div class="section-head">
-        <h2>Workshop</h2>
-        <p>Every crest in this workshop is built from the same parts as the real ones: a motif, repeated in an arrangement, inside an enclosure. The name updates as you build, following the traditional naming rules.</p>
+        <h2 data-i18n="wsH">Workshop</h2>
+        <p data-i18n="wsP">Every crest in this workshop is built from the same parts as the real ones: a motif, repeated in an arrangement, inside an enclosure. The name updates as you build, following the traditional naming rules.</p>
       </div>
       <div class="ws-grid">
         <form class="controls" id="controls" onsubmit="return false"></form>
@@ -72,24 +73,24 @@
           <div class="ws-name" id="ws-name"></div>
           <div class="stage-wrap"><svg id="ws-svg" viewBox="-500 -500 1000 1000" role="img"></svg></div>
           <div class="ws-actions">
-            <button id="ws-draw" class="primary">Draw with compass</button>
-            <label class="check"><input type="checkbox" id="ws-guides" /> Show guides</label>
-            <button id="ws-random">Surprise me</button>
-            <button id="ws-download">Download SVG</button>
+            <button id="ws-draw" class="primary" data-i18n="draw">Draw with compass</button>
+            <label class="check"><input type="checkbox" id="ws-guides" /> <span data-i18n="guides">Show guides</span></label>
+            <button id="ws-random" data-i18n="surprise">Surprise me</button>
+            <button id="ws-download" data-i18n="download">Download SVG</button>
           </div>
         </div>
       </div>
       <div class="field-head">
-        <h3>A field of crests</h3>
-        <p>Twenty-four random crests built from the grammar. Pick one to open it in the workshop.</p>
-        <button id="field-again">Make another field</button>
+        <h3 data-i18n="fieldH">A field of crests</h3>
+        <p data-i18n="fieldP">Twenty-four random crests built from the grammar. Pick one to open it in the workshop.</p>
+        <button id="field-again" data-i18n="fieldAgain">Make another field</button>
       </div>
       <div class="field" id="field"></div>
     </section>
   </main>
 
   <footer class="foot">
-    <p>Crest drawings from <a href="https://commons.wikimedia.org/wiki/Category:SVG_Japanese_family_crests">Wikimedia Commons</a>, re-traced for consistency; each crest lists its artist and license. The re-traced shapes share those licenses (CC BY-SA where the source is CC BY-SA). The workshop’s crests are generated from scratch.</p>
+    <p data-i18n="foot">Crest drawings from <a href="https://commons.wikimedia.org/wiki/Category:SVG_Japanese_family_crests">Wikimedia Commons</a>, re-traced for consistency; each crest lists its artist and license. The re-traced shapes share those licenses (CC BY-SA where the source is CC BY-SA). The workshop’s crests are generated from scratch.</p>
   </footer>
   <script type="module" src="js/main.js"></script>
 </body>

@@ -42,17 +42,23 @@ export const MOTIFS = {
         d: `M${P(0, 1)}C${P(0.18, 0.75)} ${P(0.62, 0.15)} ${P(0.66, -0.35)}Q${P(0.52, -0.86)} ${P(0.26, -0.8)}Q${P(0.08, -0.82)} ${P(0, -1.02)}` +
            `Q${P(-0.08, -0.82)} ${P(-0.26, -0.8)}Q${P(-0.52, -0.86)} ${P(-0.66, -0.35)}C${P(-0.62, 0.15)} ${P(-0.18, 0.75)} ${P(0, 1)}Z` };
     } },
+  karahana: { jp: '唐花', ro: 'karahana', en: 'Chinese flower', petal: true,
+    draw: (s, a = 0.75) => {
+      const k = a / 0.75, P = (x, y) => pt(x * k * s, y * s), r1 = f(0.25 * k * s);
+      return { hw: 0.72 * k * s, hh: s,
+        d: `M${P(0, 1)}C${P(-0.3, 0.7)} ${P(-0.72, 0.1)} ${P(-0.7, -0.35)}A${r1} ${r1} 0 0 1 ${P(-0.26, -0.82)}A${r1} ${r1} 0 0 1 ${P(0.26, -0.82)}A${r1} ${r1} 0 0 1 ${P(0.7, -0.35)}C${P(0.72, 0.1)} ${P(0.3, 0.7)} ${P(0, 1)}Z` };
+    } },
   ume: { jp: '梅', ro: 'ume', en: 'plum', petal: true, draw: (s) => ({ d: circle(0, 0, s), hw: s, hh: s }) },
   katabami: { jp: '酢漿草', ro: 'katabami', en: 'wood sorrel',
-    draw: (s) => ({ hw: s, hh: s,
-      d: [0, 1, 2].map((i) => transform(heart(0.52 * s), { tx: 0.5 * s * Math.sin((i * TAU) / 3), ty: -0.5 * s * Math.cos((i * TAU) / 3), rot: i * 120 })).join(''),
+    draw: (s, a = 0.75) => ({ hw: s, hh: s, // aspect widens the three hearts
+      d: [0, 1, 2].map((i) => transform(heart(0.52 * s), { tx: 0.5 * s * Math.sin((i * TAU) / 3), ty: -0.5 * s * Math.cos((i * TAU) / 3), rot: i * 120, sx: a / 0.75 })).join(''),
       paper: [0, 120, 240].map((r) => transform(`M0 0L0 ${f(-0.18 * s)}`, { rot: r + 60 })) }) },
   aoi: { jp: '葵', ro: 'aoi', en: 'hollyhock',
     draw: (s, a = 0.75) => {
       const k = a / 0.75;
       const veins = [`M${pt(0, 0.92 * s)}L${pt(0, -0.38 * s)}`];
       for (const k of [-1, 1]) for (const [y0, x1, y1] of [[0.55, 0.62, 0.1], [0.3, 0.78, -0.18], [0.05, 0.6, -0.42]]) veins.push(`M${pt(0, y0 * s)}Q${pt(k * x1 * 0.6 * s, (y0 - 0.12) * s)} ${pt(k * x1 * s, y1 * s)}`);
-      return { d: transform(heart(s), { rot: 180, sx: k }), paper: veins.map((v) => transform(v, { rot: 180, sx: k })), hw: s * k, hh: s };
+      return { d: transform(heart(s), { sx: k }), paper: veins.map((v) => transform(v, { sx: k })), hw: s * k, hh: s, stroke: 0.045 }; // tip toward the centre, notch outward
     } },
   hishi: { jp: '菱', ro: 'hishi', en: 'diamond',
     draw: (s, a = 0.75) => ({ d: poly([[0, -s], [a * s, 0], [0, s], [-a * s, 0]]), hw: a * s, hh: s }) },
@@ -104,12 +110,13 @@ function mokkoOutline(n, rc, rl, rot = -90) {
 function enclosure(spec) {
   const e = spec.enclosure || 'none', g = [];
   const ring = (ro, ri) => { g.push({ c: [0, 0, ro] }, { c: [0, 0, ri] }); return circle(0, 0, ro) + circle(0, 0, ri); };
+  const w = (def) => (spec.ringW ? spec.ringW * R : def); // optional ring thickness override (fraction of R)
   switch (e) {
-    case 'maru': return { d: ring(R, R - 48), rin: R - 48 - 34, guides: g };
-    case 'hosowa': return { d: ring(R, R - 20), rin: R - 20 - 34, guides: g };
-    case 'futowa': return { d: ring(R, R - 100), rin: R - 100 - 32, guides: g };
+    case 'maru': return { d: ring(R, R - w(48)), rin: R - w(48) - 34, edge: R - w(48), guides: g };
+    case 'hosowa': return { d: ring(R, R - w(20)), rin: R - w(20) - 34, edge: R - w(20), guides: g };
+    case 'futowa': return { d: ring(R, R - w(100)), rin: R - w(100) - 32, edge: R - w(100), guides: g };
     case 'nijuwa': return { d: ring(R, R - 26) + ring(R - 50, R - 74), rin: R - 74 - 30, guides: g };
-    case 'janome': return { d: ring(R, R * 0.36), rin: R * 0.36 - 26, guides: g };
+    case 'janome': { const h = R * (spec.holeR || 0.36); return { d: ring(R, h), rin: h - 26, guides: g }; }
     case 'kikko': case 'kaku': {
       const n = e === 'kikko' ? 6 : 4, t = 42, rot = e === 'kikko' ? 0 : -90;
       const P = (r) => Array.from({ length: n }, (_, k) => [r * Math.cos(((rot + (k * 360) / n) * Math.PI) / 180), r * Math.sin(((rot + (k * 360) / n) * Math.PI) / 180)]);
@@ -118,8 +125,14 @@ function enclosure(spec) {
       return { d: poly(P(R)) + poly(P(ri)), rin: ri * ap - 30, guides: g };
     }
     case 'mokko': {
-      const n = spec.lobes || 4, rl = R * (n === 4 ? 0.5 : n === 5 ? 0.5 : 0.42), rc = R - rl, t = 40;
+      const n = spec.lobes || 4, rl = R * (spec.lobeR || (n === 4 ? 0.5 : n === 5 ? 0.5 : 0.42)), rc = R - rl, t = 40;
       for (let k = 0; k < n; k++) { const a = (-90 + (k * 360) / n) * Math.PI / 180; g.push({ c: [rc * Math.cos(a), rc * Math.sin(a), rl] }); }
+      if (spec.mokkoFill) { // solid lobes around a round window, split by seams (the Oda style)
+        const ri = spec.mokkoFill * R, half = Math.PI / n, dd = rc * Math.cos(half) + Math.sqrt(Math.max(0, rl * rl - (rc * Math.sin(half)) ** 2));
+        g.push({ c: [0, 0, ri] });
+        const seams = Array.from({ length: n }, (_, k) => { const a = -Math.PI / 2 + (2 * k + 1) * half; return `M${pt(ri * Math.cos(a), ri * Math.sin(a))}L${pt(dd * Math.cos(a), dd * Math.sin(a))}`; });
+        return { d: mokkoOutline(n, rc, rl) + circle(0, 0, ri), paper: seams, stroke: R * (spec.seamW || 0.02), rin: ri - 12, edge: ri, guides: g };
+      }
       return { d: mokkoOutline(n, rc, rl) + mokkoOutline(n, rc, rl - t), rin: (rc * Math.cos(Math.PI / n) + Math.sqrt(Math.max(0, (rl - t) ** 2 - (rc * Math.sin(Math.PI / n)) ** 2))) * 0.82, guides: g };
     }
     default: return { d: '', rin: R, guides: g };
@@ -134,14 +147,19 @@ export function build(input) {
   const enc = enclosure(spec), Rin = enc.rin;
   const parts = []; // { d, role, paper? }   in drawing order
   const guides = [...enc.guides.map((x) => ({ ...x, step: 'enclosure' }))];
-  if (enc.d) parts.push({ d: enc.d, role: 'enclosure' });
+  if (enc.d) parts.push({ d: enc.d, role: 'enclosure', paper: enc.paper, stroke: enc.stroke });
+  if (spec.innerRing) { // an extra thin ring inside the enclosure: [radius, width] as fractions of the inner radius
+    const [ir, iw] = spec.innerRing; guides.push({ c: [0, 0, ir * Rin], step: 'enclosure' });
+    parts.push({ d: circle(0, 0, ir * Rin) + circle(0, 0, (ir - iw) * Rin), role: 'enclosure' });
+  }
+  const clip = !spec.clip ? 0 : spec.innerRing ? (spec.innerRing[0] - spec.innerRing[1]) * Rin : enc.edge || R; // motifs may run under the ring and get cut by it
 
   const M = MOTIFS[spec.motif] || MOTIFS.none;
   const unit = (s) => M.draw(s, spec.aspect);
   const place = (s, x, y, rot) => {
     const u = unit(s);
     if (!u.d) return;
-    parts.push({ d: transform(u.d, { tx: x, ty: y, rot }), role: 'motif', paper: (u.paper || []).map((p) => transform(p, { tx: x, ty: y, rot })), stroke: s * 0.07 });
+    parts.push({ d: transform(u.d, { tx: x, ty: y, rot }), role: 'motif', paper: (u.paper || []).map((p) => transform(p, { tx: x, ty: y, rot })), stroke: s * (u.stroke || 0.07), clip });
   };
   const s = spec.size * Rin;
   const yo = spec.dy * Rin;
@@ -152,10 +170,10 @@ export function build(input) {
       const a = ((spec.rot + (i * 360) / spec.n) * Math.PI) / 180;
       const x = Math.sin(a) * rr * (spec.upright ? (spec.aspect || 1) : 1), y = -Math.cos(a) * rr + yo;
       guides.push({ l: [0, yo, Math.sin(a) * Rin, -Math.cos(a) * Rin + yo], step: 'layout' }, { c: [x, y, s], step: 'motif' });
-      place(s, x, y, spec.upright ? 0 : spec.rot + (i * 360) / spec.n);
+      place(s, x, y, spec.upright ? 0 : spec.rot + (i * 360) / spec.n + (spec.spin || 0));
     }
   } else if (spec.layout === 'mitsumori') {
-    const u = unit(s), dx = u.hw * 1.06, dy2 = u.hh * 1.06;
+    const u = unit(s), dx = u.hw * (spec.spread || 1.06), dy2 = u.hh * (spec.spread || 1.06);
     const P = [[0, -dy2 + yo], [-dx, dy2 + yo], [dx, dy2 + yo]];
     guides.push({ l: [...P[0], ...P[1]], step: 'layout' }, { l: [...P[1], ...P[2]], step: 'layout' }, { l: [...P[2], ...P[0]], step: 'layout' });
     for (const [x, y] of P) { guides.push({ c: [x, y, Math.max(u.hw, u.hh)], step: 'motif' }); place(s, x, y, 0); }
@@ -174,7 +192,7 @@ export function build(input) {
   if (spec.center !== 'none' && spec.layout === 'ring') {
     guides.push({ c: [0, yo, cs], step: 'center' });
     if (spec.center === 'hoshi') parts.push({ d: circle(0, yo, cs), role: 'center' });
-    if (spec.center === 'same') place(cs, 0, yo, spec.rot);
+    if (spec.center === 'same') place(cs, 0, yo, spec.rot + (spec.centerSpin || 0));
     if (spec.center === 'stamen') {
       const lines = [circle(0, yo, cs * 1.75)];
       for (let i = 0; i < spec.n; i++) { const a = ((spec.rot + (i * 360) / spec.n) * Math.PI) / 180; lines.push(`M${pt(Math.sin(a) * cs * 1.75, yo - Math.cos(a) * cs * 1.75)}L${pt(Math.sin(a) * cs * 3.6, yo - Math.cos(a) * cs * 3.6)}`); }
@@ -192,9 +210,9 @@ export function build(input) {
 
   // overlays
   const ov = spec.overlay;
-  if (ov === 'juji') { const t = Rin * 0.16, L = enc.d ? Rin + 40 : Rin; parts.push({ d: poly([[-t, -L], [t, -L], [t, -t], [L, -t], [L, t], [t, t], [t, L], [-t, L], [-t, t], [-L, t], [-L, -t], [-t, -t]]), role: 'overlay' }); }
+  if (ov === 'juji') { const t = Rin * (spec.ovT || 0.16), L = enc.d ? Rin + 40 : Rin; parts.push({ d: poly([[-t, -L], [t, -L], [t, -t], [L, -t], [L, t], [t, t], [t, L], [-t, L], [-t, t], [-L, t], [-L, -t], [-t, -t]]), role: 'overlay' }); }
   if (ov === 'ichimonji') {
-    const y = -Rin * 0.8, h = Rin * 0.11, w = Rin * 0.95;
+    const y = -Rin * (spec.ovY || 0.8), h = Rin * (spec.ovT || 0.11), w = Rin * (spec.ovW || 0.95);
     parts.push({ d: `M${pt(-w, y - h * 1.6)}Q${pt(-w * 0.75, y - h * 0.6)} ${pt(-w * 0.5, y - h)}L${pt(w * 0.55, y - h)}Q${pt(w * 0.85, y - h * 1.5)} ${pt(w, y - h * 1.3)}Q${pt(w * 1.06, y + h * 0.3)} ${pt(w * 0.92, y + h * 1.6)}Q${pt(w * 0.7, y + h)} ${pt(w * 0.45, y + h)}L${pt(-w * 0.6, y + h)}Q${pt(-w * 0.95, y + h * 1.4)} ${pt(-w * 1.02, y)}Z`, role: 'overlay' });
   }
   if (ov.startsWith('hiki')) {
@@ -205,7 +223,12 @@ export function build(input) {
       parts.push({ d: poly([[-x0, y0], [x0, y0], [x0, y1], [-x0, y1]]), role: 'overlay' });
     }
   }
-  return { spec, parts, guides, name: nameOf(spec) };
+  if (spec.shift) { // move the whole crest down (originals are centred on their bounding box, not their compass centre)
+    const ty = spec.shift * R;
+    for (const p of parts) { p.d = transform(p.d, { ty }); if (p.paper) p.paper = p.paper.map((q) => transform(q, { ty })); if (p.clip) p.clipY = ty; }
+    for (const g of guides) { if (g.c) g.c = [g.c[0], g.c[1] + ty, g.c[2]]; else g.l = [g.l[0], g.l[1] + ty, g.l[2], g.l[3] + ty]; }
+  }
+  return { spec, parts, guides, clip, clipY: spec.shift ? spec.shift * R : 0, name: nameOf(spec) };
 }
 
 // ---------- naming ----------
@@ -214,13 +237,15 @@ const COUNT_RO = ['', 'hitotsu', 'futatsu', 'mitsu', 'yotsu', 'itsutsu', 'mutsu'
 const COUNT_EN = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen'];
 const plural = (en, n) => (n === 1 ? en : en.endsWith('f') ? en.slice(0, -1) + 'ves' : en.endsWith('sh') ? en + 'es' : en + 's');
 
+// how many motifs a crest shows (what its name counts)
+export const nameCount = (spec) => (spec.motif === 'none' ? 0 : spec.layout === 'ring' ? spec.n + (spec.center === 'same' ? 1 : 0) : spec.layout === 'mitsumori' ? 3 : spec.layout === 'grid' ? spec.rows * spec.cols : 1);
 export function nameOf(spec) {
   spec = { ...DEFAULT, ...spec };
   const E = ENCLOSURES[spec.enclosure] || ENCLOSURES.none, M = MOTIFS[spec.motif] || MOTIFS.none;
   let jp = '', ro = '', en = '';
-  const count = spec.layout === 'ring' ? spec.n + (spec.center === 'same' ? 1 : 0) : spec.layout === 'mitsumori' ? 3 : spec.layout === 'grid' ? spec.rows * spec.cols : spec.motif === 'none' ? 0 : 1;
+  const count = nameCount(spec);
   if (M.petal && spec.layout === 'ring') {
-    const base = spec.motif === 'ume' ? (spec.center === 'ken' || spec.center === 'hoshi' ? ['梅鉢', 'umebachi', 'plum blossom'] : ['梅', 'ume', 'plum blossom']) : ['桔梗', 'kikyō', 'bellflower'];
+    const base = spec.motif === 'karahana' ? ['唐花', 'karahana', 'Chinese flower'] : spec.motif === 'ume' ? (spec.center === 'ken' || spec.center === 'hoshi' ? ['梅鉢', 'umebachi', 'plum blossom'] : ['梅', 'ume', 'plum blossom']) : ['桔梗', 'kikyō', 'bellflower'];
     jp = spec.n === 5 ? base[0] : `${KANJI[spec.n]}弁${base[0]}`;
     ro = spec.n === 5 ? base[1] : `${COUNT_RO[spec.n]}-ben ${base[1]}`;
     en = spec.n === 5 ? `A ${base[2]}` : `A ${spec.n}-petalled ${base[2]}`;

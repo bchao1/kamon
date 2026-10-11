@@ -150,3 +150,10 @@ select { width: 100%; font: 15px var(--gothic); color: var(--shiro); background:
   html { scroll-behavior: auto; }
   .tile, .row-label, .board { transition: none; }
 }
+
+/* ---------- language switch + Traditional Chinese type ---------- */
+.lang-switch { position: fixed; top: 14px; right: 16px; z-index: 50; display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: rgba(12, 23, 48, .82); backdrop-filter: blur(6px); border: 1px solid #2c4170; }
+.lang-switch button { border: 0; padding: 7px 12px; font-size: 13px; }
+.lang-switch button[aria-pressed='true'] { background: var(--shiro); color: var(--kachi); }
+:lang(zh-Hant) { --mincho: 'Noto Serif TC', 'Shippori Mincho B1', serif; --gothic: 'Noto Sans TC', 'Zen Kaku Gothic New', system-ui, sans-serif; }
+:lang(ja) .hero h1, :lang(zh-Hant) .hero h1 { max-width: none; white-space: nowrap; }
