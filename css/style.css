@@ -176,8 +176,9 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .tick { pointer-events: none; }
 .fixed { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
 
-.shelf { grid-column: 1 / -1; grid-row: 3; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s4) var(--s5); }
-.grp { display: flex; flex-direction: column; gap: var(--s2); }
+/* the shelf: the remaining controls stacked as a list on the left, the actions stacked on the right */
+.shelf { grid-column: 1 / -1; grid-row: 3; display: grid; grid-template-columns: max-content 1fr max-content; row-gap: var(--s2); align-items: center; }
+.grp { grid-column: 1; display: grid; grid-template-columns: 136px max-content; column-gap: var(--s3); align-items: center; min-height: 36px; }
 .grp > span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); }
 .grp > span output { color: var(--shiro); margin-left: var(--s2); }
 .icons { display: flex; gap: var(--s2); }
@@ -188,7 +189,7 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
 .stepper button:hover { color: var(--shiro); }
 .stepper svg { width: 24px; height: 24px; display: block; }
 .stepper svg path { fill: var(--shiro); }
-.actions { margin-left: auto; display: flex; flex-direction: column; gap: var(--s2); align-items: flex-end; text-align: right; padding-bottom: var(--s1); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.actions { grid-column: 3; grid-row: 1 / span 9; align-self: end; display: flex; flex-direction: column; gap: var(--s2); align-items: flex-end; text-align: right; padding-bottom: var(--s1); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .actions button { transition: color .3s; }
 .actions button:hover { color: var(--kihada); }
 .actions .primary { color: var(--kihada); }
@@ -246,7 +247,8 @@ html.js .in [data-reveal], html.js .in[data-reveal] { opacity: 1; transform: non
   .note.l .ladder { align-items: flex-start; }
   .leaders { display: none; }
   .credit, .sign { justify-self: start; }
-  .actions { margin-left: 0; align-items: flex-start; text-align: left; }
+  .shelf { grid-template-columns: 1fr; row-gap: var(--s3); }
+  .actions { grid-column: 1; grid-row: auto; align-items: flex-start; text-align: left; margin-top: var(--s4); }
 }
 @media (max-width: 1100px) {
   .weave .row { grid-template-columns: repeat(8, minmax(0, 1fr)); }
