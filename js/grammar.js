@@ -67,9 +67,23 @@ export const MOTIFS = {
   hoshi: { jp: '星', ro: 'hoshi', en: 'star', draw: (s) => ({ d: circle(0, 0, s), hw: s, hh: s }) },
   sen: { jp: '銭', ro: 'zeni', en: 'coin',
     draw: (s) => ({ d: circle(0, 0, s) + poly([[-0.24 * s, -0.24 * s], [0.24 * s, -0.24 * s], [0.24 * s, 0.24 * s], [-0.24 * s, 0.24 * s]]), hw: s, hh: s }) },
+  // A true tomoe: a round head whose tail sweeps around the crest centre, thinning to a point.
+  // ctx.rr = distance from the head to the centre it swirls around (0 → a lone tomoe, centred on itself);
+  // ctx.tail scales the sweep (1 = 150°); ctx.reach = how far out the tail grows (absolute radius; default:
+  // the head's own outer edge); ctx.flip mirrors it (左巴 vs 右巴).
   tomoe: { jp: '巴', ro: 'tomoe', en: 'swirl',
-    draw: (s) => ({ hw: s, hh: s,
-      d: `M${pt(0, -s)}A${f(s)} ${f(s)} 0 0 1 ${pt(0, s)}A${f(s / 2)} ${f(s / 2)} 0 0 1 ${pt(0, 0)}A${f(s / 2)} ${f(s / 2)} 0 0 0 ${pt(0, -s)}Z` }) },
+    draw: (s, a, ctx = {}) => {
+      const h = 0.5 * s, lone = !ctx.rr, rr = lone ? h : ctx.rr, Ro0 = rr + h, Ro = Math.max(Ro0, ctx.reach || 0), Ri0 = Math.max(0, rr - h);
+      const phi = ((ctx.tail ?? 1) * 150 * Math.PI) / 180, k = ctx.flip ? -1 : 1, oy = lone ? -rr : 0, n = 40;
+      const P = (rho, al) => pt(k * rho * Math.sin(al), rr - rho * Math.cos(al) + oy);
+      const pts = [];
+      for (let i = 0; i <= n; i++) pts.push(P(Ro0 + (Ro - Ro0) * Math.sin((Math.PI / 2) * Math.min(1, (2 * i) / n)), (phi * i) / n)); // outer edge: swells out to the reach, then rides that circle
+      // inner edge: from the tip back to the front of the head (not its inner side), so the tail stays slim
+      const aT = Math.atan2(h, rr), rT = Math.hypot(h, rr);
+      for (let i = n; i >= 1; i--) { const u = i / n; pts.push(P(rT + (Ro - rT) * u ** 1.35, aT + (phi - aT) * u)); }
+      for (let i = 0; i < 30; i++) { const t = Math.PI / 2 + (1.5 * Math.PI * i) / 30; pts.push(pt(k * h * Math.sin(t), -h * Math.cos(t) + oy)); } // the head: front → inner side → back
+      return { hw: 0.6 * s, hh: 0.6 * s, d: 'M' + pts.join('L') + 'Z' };
+    } },
   sasa: { jp: '笹', ro: 'sasa', en: 'bamboo leaf',
     draw: (s) => ({ hw: 0.36 * s, hh: s, d: `M${pt(0, -s)}Q${pt(0.42 * s, -0.15 * s)} ${pt(0, s)}Q${pt(-0.42 * s, -0.15 * s)} ${pt(0, -s)}Z`, paper: [`M${pt(0, -0.7 * s)}L${pt(0, 0.8 * s)}`] }) },
   none: { jp: '', ro: '', en: '', draw: () => ({ d: '', hw: 0, hh: 0 }) },
@@ -140,7 +154,7 @@ function enclosure(spec) {
 }
 
 // ---------- the builder ----------
-export const DEFAULT = { enclosure: 'maru', lobes: 4, layout: 'ring', motif: 'kikyo', n: 5, r: 0.44, size: 0.46, rot: 0, aspect: 0.75, upright: false, rows: 2, cols: 3, gap: 0.04, dy: 0, center: 'none', centerSize: 0.12, overlay: 'none', style: 'hinata' };
+export const DEFAULT = { enclosure: 'maru', lobes: 4, layout: 'ring', motif: 'kikyo', n: 5, r: 0.44, size: 0.46, rot: 0, aspect: 0.75, upright: false, rows: 2, cols: 3, gap: 0.04, dy: 0, center: 'none', centerSize: 0.12, overlay: 'none', style: 'hinata', spin: 0, tail: 1, flip: false };
 
 export function build(input) {
   const spec = { ...DEFAULT, ...input };
@@ -155,9 +169,9 @@ export function build(input) {
   const clip = !spec.clip ? 0 : spec.innerRing ? (spec.innerRing[0] - spec.innerRing[1]) * Rin : enc.edge || R; // motifs may run under the ring and get cut by it
 
   const M = MOTIFS[spec.motif] || MOTIFS.none;
-  const unit = (s) => M.draw(s, spec.aspect);
-  const place = (s, x, y, rot) => {
-    const u = unit(s);
+  const unit = (s, rr = 0) => M.draw(s, spec.aspect, { rr, tail: spec.tail, flip: spec.flip, reach: rr && spec.reach ? spec.reach * Rin : 0 });
+  const place = (s, x, y, rot, rr = 0) => {
+    const u = unit(s, rr);
     if (!u.d) return;
     parts.push({ d: transform(u.d, { tx: x, ty: y, rot }), role: 'motif', paper: (u.paper || []).map((p) => transform(p, { tx: x, ty: y, rot })), stroke: s * (u.stroke || 0.07), clip });
   };
@@ -170,7 +184,7 @@ export function build(input) {
       const a = ((spec.rot + (i * 360) / spec.n) * Math.PI) / 180;
       const x = Math.sin(a) * rr * (spec.upright ? (spec.aspect || 1) : 1), y = -Math.cos(a) * rr + yo;
       guides.push({ l: [0, yo, Math.sin(a) * Rin, -Math.cos(a) * Rin + yo], step: 'layout' }, { c: [x, y, s], step: 'motif' });
-      place(s, x, y, spec.upright ? 0 : spec.rot + (i * 360) / spec.n + (spec.spin || 0));
+      place(s, x, y, spec.upright ? 0 : spec.rot + (i * 360) / spec.n + (spec.spin || 0), rr);
     }
   } else if (spec.layout === 'mitsumori') {
     const u = unit(s), dx = u.hw * (spec.spread || 1.06), dy2 = u.hh * (spec.spread || 1.06);
@@ -259,7 +273,9 @@ export function nameOf(spec) {
     jp = (c === 1 ? '' : `${KANJI[c]}つ`) + (pile ? '盛り' : '') + M.jp;
     ro = (c === 1 ? '' : COUNT_RO[c] + (pile ? '-mori' : '') + ' ') + M.ro;
     if (spec.motif === 'hoshi' && c > 1 && !pile) ro = COUNT_RO[c] + 'boshi'; // rendaku: mitsu + hoshi → mitsuboshi
+    if (spec.motif === 'tomoe' && c > 1 && !pile) ro = COUNT_RO[c] + 'domoe'; // mitsu + tomoe → mitsudomoe
     en = (c === 1 ? `A ${M.en}` : `${COUNT_EN[c]} ${plural(M.en, c)}`) + (pile ? ', piled' : '');
+    if (spec.motif === 'tomoe' && spec.flip) { jp = '左' + jp; ro = 'hidari ' + ro; en += ' turning left'; }
     if (c > 10) { jp = jp.replace('つ', ''); }
   }
   const OV = { juji: ['十字', 'jūji', 'a cross'], ichimonji: ['一文字', 'ichimonji', 'the character “one”'], hiki1: ['一つ引', 'hitotsu hiki', 'one bar'], hiki2: ['二つ引', 'futatsu hiki', 'two bars'], hiki3: ['三つ引', 'mitsu hiki', 'three bars'] }[spec.overlay];
@@ -287,7 +303,7 @@ export function randomSpec(seed) {
   const spec = { ...DEFAULT, motif, enclosure, lobes: pick([4, 4, 5]), rot: 0, center: 'none', overlay: 'none', style: r() < 0.18 ? 'kage' : 'hinata', dy: 0 };
   const ring = (n, r0, k) => { spec.layout = 'ring'; spec.n = n; spec.r = r0; spec.size = Math.min(r0 * Math.sin(Math.PI / n) * k, 1 - r0 - 0.02); };
   if (MOTIFS[motif].petal) { const n = pick([5, 5, 5, 6, 8]); spec.layout = 'ring'; spec.n = n; if (motif === 'kikyo') { spec.r = 0.47; spec.size = 0.48; spec.center = pick(['stamen', 'hoshi', 'none']); spec.centerSize = 0.07; } else { spec.r = 0.62; spec.size = Math.min(0.36, 0.62 * Math.sin(Math.PI / n) * 0.98); spec.center = pick(['ken', 'hoshi']); spec.centerSize = spec.center === 'ken' ? 0.32 : 0.18; } }
-  else if (motif === 'tomoe') { ring(pick([2, 3, 3, 3, 4]), 0.5, 1.0); spec.size = 0.5; spec.r = 0.48; }
+  else if (motif === 'tomoe') { ring(pick([2, 3, 3, 3, 4]), 0.5, 1.0); spec.r = 0.5; spec.size = +(2 * 0.5 * Math.sin(Math.PI / spec.n) * 0.82).toFixed(3); spec.reach = 0.96; spec.tail = pick([0.6, 0.75, 0.9]); spec.flip = r() < 0.5; } // heads sized so neighbours don't touch
   else if (motif === 'aoi') { const n = pick([3, 3, 3, 4]); spec.layout = 'ring'; spec.n = n; spec.size = n === 3 ? 0.52 : 0.44; spec.r = n === 3 ? 0.5 : 0.48; spec.aspect = n === 3 ? 0.62 : 0.55; spec.rot = n === 3 ? 60 : 45; }
   else if (motif === 'katabami') { if (r() < 0.5) { spec.layout = 'single'; spec.size = 0.92; } else { ring(6, 0.62, 1.0); spec.size = 0.38; spec.center = 'same'; spec.centerSize = 0.38; } }
   else if (motif === 'sasa') { const n = pick([3, 5, 6, 8]); spec.layout = 'ring'; spec.n = n; spec.size = 0.5; spec.r = 0.5; spec.center = pick(['none', 'hoshi']); spec.centerSize = 0.1; }

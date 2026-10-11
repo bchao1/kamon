@@ -262,7 +262,9 @@ const ws = (() => {
     <div class="ctl"><span>${t('cMotif')}</span><div class="picker" data-pick="motif">${Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(motifSpec(k))}${t('motifs')[k]}</button>`).join('')}</div></div>
     <div class="ctl"><span>${t('cLayout')}</span><div class="seg" data-pick="layout">${Object.keys(LAYOUTS).map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${t('layouts')[k]}</button>`).join('')}</div></div>
     ${slider('n', t('cN'), 1, 12, 1)}${slider('rows', t('cRows'), 1, 4, 1)}${slider('cols', t('cCols'), 1, 4, 1)}
-    ${slider('r', t('cR'), 0, 0.9, 0.01)}${slider('size', t('cSize'), 0.05, 1, 0.01)}${slider('rot', t('cRot'), 0, 180, 1)}${slider('aspect', t('cAspect'), 0.4, 1.6, 0.01)}${slider('dy', t('cDy'), -0.4, 0.4, 0.01)}
+    ${slider('r', t('cR'), 0, 0.9, 0.01)}${slider('size', t('cSize'), 0.05, 1, 0.01)}${slider('rot', t('cRot'), 0, 180, 1)}${slider('spin', t('cSpin'), 0, 360, 1)}${slider('aspect', t('cAspect'), 0.4, 1.6, 0.01)}${slider('dy', t('cDy'), -0.4, 0.4, 0.01)}
+    ${slider('tail', t('cTail'), 0.4, 1.8, 0.01)}${slider('reach', t('cReach'), 0, 1.1, 0.01)}
+    <div class="ctl" data-for="flip"><span>${t('cFlip')}</span><div class="seg" data-pick="flip"><button type="button" data-v="false" aria-pressed="false">${t('migi')}</button><button type="button" data-v="true" aria-pressed="false">${t('hidari')}</button></div></div>
     <div class="ctl"><span>${t('cEnc')}</span><div class="picker" data-pick="enclosure">${Object.keys(ENCLOSURES).map((k) => `<button type="button" data-v="${k}" aria-pressed="false">${mini(encSpec(k))}${t('encs')[k]}</button>`).join('')}</div></div>
     ${slider('lobes', t('cLobes'), 4, 8, 1)}
     <label class="ctl" data-for="center"><span>${t('cCenter')}</span><select name="center">${Object.keys(CENTERS).map((k) => `<option value="${k}">${t('centers')[k]}</option>`).join('')}</select></label>
@@ -270,16 +272,16 @@ const ws = (() => {
     <label class="ctl"><span>${t('cOverlay')}</span><select name="overlay">${Object.keys(OVERLAYS).map((k) => `<option value="${k}">${t('overlays')[k]}</option>`).join('')}</select></label>
     <div class="ctl"><span>${t('cStyle')}</span><div class="seg" data-pick="style"><button type="button" data-v="hinata" aria-pressed="false">${t('hinata')}</button><button type="button" data-v="kage" aria-pressed="false">${t('kage')}</button></div></div>`; };
   renderForm();
-  form.addEventListener('click', (e) => { const b = e.target.closest('[data-pick] button'); if (!b) return; const k = b.parentElement.dataset.pick, next = { ...spec, [k]: b.dataset.v };
+  form.addEventListener('click', (e) => { const b = e.target.closest('[data-pick] button'); if (!b) return; const k = b.parentElement.dataset.pick, v = b.dataset.v, next = { ...spec, [k]: v === 'true' ? true : v === 'false' ? false : v };
     // settings tuned for one historical crest don't carry over to a different enclosure or motif
     if (k === 'enclosure') for (const x of ['ringW', 'innerRing', 'clip', 'mokkoFill', 'lobeR', 'holeR']) delete next[x];
-    if (k === 'motif') for (const x of ['spin', 'centerSpin']) delete next[x];
+    if (k === 'motif') for (const x of ['spin', 'centerSpin', 'reach']) delete next[x];
     set(next); });
   form.addEventListener('input', (e) => { const el = e.target; if (!el.name) return; set({ ...spec, [el.name]: el.type === 'range' ? +el.value : el.value }); });
   function sync() {
-    form.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', spec[p.dataset.pick] === b.dataset.v)));
-    form.querySelectorAll('input, select').forEach((el) => { if (el.name in spec) { el.value = spec[el.name]; const o = el.closest('label')?.querySelector('output'); if (o) o.textContent = el.name === 'rot' ? `${spec.rot}°` : (+spec[el.name]).toFixed(el.step < 1 ? 2 : 0); } });
-    const show = { n: spec.layout === 'ring', rows: spec.layout === 'grid', cols: spec.layout === 'grid', r: spec.layout === 'ring', rot: spec.layout === 'ring' || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko', center: spec.layout === 'ring', centerSize: spec.layout === 'ring' && spec.center !== 'none', dy: spec.layout !== 'ring' || true };
+    form.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(spec[p.dataset.pick]) === b.dataset.v)));
+    form.querySelectorAll('input, select').forEach((el) => { if (el.name in spec) { el.value = spec[el.name]; const o = el.closest('label')?.querySelector('output'); if (o) o.textContent = el.name === 'rot' || el.name === 'spin' ? `${spec[el.name]}°` : (+spec[el.name]).toFixed(el.step < 1 ? 2 : 0); } });
+    const show = { n: spec.layout === 'ring', rows: spec.layout === 'grid', cols: spec.layout === 'grid', r: spec.layout === 'ring', rot: spec.layout === 'ring' || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko', spin: spec.layout === 'ring', tail: spec.motif === 'tomoe', reach: spec.motif === 'tomoe', flip: spec.motif === 'tomoe', center: spec.layout === 'ring', centerSize: spec.layout === 'ring' && spec.center !== 'none', dy: spec.layout !== 'ring' || true };
     form.querySelectorAll('[data-for]').forEach((el) => (el.hidden = show[el.dataset.for] === false));
   }
   function set(s) {
