@@ -81,16 +81,16 @@ function layout() {
   const W = board.clientWidth, gap = 18, tiles = [...board.querySelectorAll('.tile')];
   const lblH = 52;
   if (mode === 'grid') {
-    const cols = W > 1100 ? 5 : W > 760 ? 4 : W > 480 ? 3 : 2, t = (W - gap * (cols - 1)) / cols;
-    const tileH = t + lblH;
-    tiles.forEach((el, i) => { el.style.setProperty('--t', `${t}px`); el.style.transform = `translate(${(i % cols) * (t + gap)}px, ${Math.floor(i / cols) * (tileH + gap)}px)`; });
+    const cols = W > 1100 ? 5 : W > 760 ? 4 : W > 480 ? 3 : 2, ts = (W - gap * (cols - 1)) / cols;
+    const tileH = ts + lblH;
+    tiles.forEach((el, i) => { el.style.setProperty('--t', `${ts}px`); el.style.transform = `translate(${(i % cols) * (ts + gap)}px, ${Math.floor(i / cols) * (tileH + gap)}px)`; });
     board.style.height = `${Math.ceil(tiles.length / cols) * (tileH + gap)}px`;
     return;
   }
   const groups = mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...t('symGroups')[k]]) : Object.entries(t(mode === 'motif' ? 'motifGroups' : 'sides')).map(([k, v]) => [k, v, '']);
   const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : mode === 'motif' ? c.motif : c.side);
   const biggest = Math.max(...groups.map(([gk]) => CLANS.filter((c) => keyOf(c) === gk).length));
-  const narrow = W < 700, L = narrow ? 0 : 220, t = narrow ? Math.min(110, (W - gap * 2) / 3) : Math.max(96, Math.min(132, (W - L) / biggest - gap)), per = Math.max(1, Math.floor((W - L + gap) / (t + gap)));
+  const narrow = W < 700, L = narrow ? 0 : 220, ts = narrow ? Math.min(110, (W - gap * 2) / 3) : Math.max(96, Math.min(132, (W - L) / biggest - gap)), per = Math.max(1, Math.floor((W - L + gap) / (ts + gap)));
   let y = 0;
   for (const [gk, name, sub] of groups) {
     const members = CLANS.filter((c) => keyOf(c) === gk);
@@ -99,15 +99,15 @@ function layout() {
     lab.className = 'row-label';
     const subText = sub || (mode === 'side' && gk === 'fallen' ? t('destroyedRange') : t('houses', members.length));
     lab.innerHTML = `<b>${name}</b><span>${subText}</span>`;
-    lab.style.transform = `translate(0, ${y + (narrow ? 0 : t * 0.3)}px)`;
+    lab.style.transform = `translate(0, ${y + (narrow ? 0 : ts * 0.3)}px)`;
     board.append(lab);
     if (narrow) y += 56;
     members.forEach((c, i) => {
       const el = board.querySelector(`.tile[data-key="${c.key}"]`);
-      el.style.setProperty('--t', `${t}px`);
-      el.style.transform = `translate(${L + (i % per) * (t + gap)}px, ${y + Math.floor(i / per) * (t + lblH + gap)}px)`;
+      el.style.setProperty('--t', `${ts}px`);
+      el.style.transform = `translate(${L + (i % per) * (ts + gap)}px, ${y + Math.floor(i / per) * (ts + lblH + gap)}px)`;
     });
-    y += Math.ceil(members.length / per) * (t + lblH + gap) + 14;
+    y += Math.ceil(members.length / per) * (ts + lblH + gap) + 14;
   }
   board.style.height = `${y}px`;
 }
@@ -118,7 +118,7 @@ let step = 'whole', cur = null;
 const GROUP_COLORS = ['var(--g0)', 'var(--g1)', 'var(--g2)', 'var(--g3)', 'var(--g4)', 'var(--g5)'];
 function openAnatomy(key, scroll) {
   active = key; cur = BY_KEY[key];
-  board.querySelectorAll('.tile').forEach((t) => t.classList.toggle('active', t.dataset.key === key));
+  board.querySelectorAll('.tile').forEach((el) => el.classList.toggle('active', el.dataset.key === key));
   renderInfo();
   $('#steps [data-step="compass"]').disabled = !cur.recipe;
   if (step === 'compass' && !cur.recipe) step = 'whole';
