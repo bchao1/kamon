@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kamon, taken apart</title>
+  <title>Kamon</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Ccircle r='48' fill='%2313213f'/%3E%3Ccircle r='40' fill='none' stroke='%23eef0ea' stroke-width='5'/%3E%3Cg fill='%23eef0ea'%3E%3Ccircle cy='-14' r='10'/%3E%3Ccircle cx='12' cy='7' r='10'/%3E%3Ccircle cx='-12' cy='7' r='10'/%3E%3C/g%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,80 +11,92 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header class="hero">
+  <header class="slide hero" id="top">
     <div class="hero-type">
-      <p class="tategaki hero-kanji" aria-hidden="true">家紋</p>
-      <div>
-        <h1>Kamon, taken apart</h1>
-        <p class="lede">Twenty crests of the Sengoku houses, broken down into the compass strokes they were drawn with. Then a workshop where you can draw your own.</p>
-        <nav class="hero-nav">
-          <a href="#gallery">See the twenty houses</a>
-          <a href="#workshop">Draw a crest</a>
-        </nav>
+      <p class="tategaki hero-kanji" lang="ja" aria-hidden="true">家紋</p>
+      <div class="hero-words">
+        <h1>Kamon</h1>
+        <p class="lede">Twenty crests of the Sengoku houses, and the compass strokes they were drawn with.</p>
       </div>
     </div>
     <figure class="hero-crest">
-      <svg id="hero-svg" viewBox="-500 -500 1000 1000" role="img" aria-label="A crest being drawn with compass and ruler"></svg>
+      <svg id="hero-svg" viewBox="-500 -500 1000 1000" role="img" aria-label="Crest pieces gathering into a crest"></svg>
       <figcaption id="hero-cap"></figcaption>
     </figure>
+    <a class="next" href="#gallery" aria-label="Next: the twenty houses"><svg viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H44M34 3L45 12L34 21" /></svg></a>
   </header>
 
   <main>
-    <section id="gallery" class="section">
-      <div class="section-head">
-        <h2>Twenty houses</h2>
-        <p>Every crest here was worn into battle between 1560 and 1600. Re-sort them to see what they share, or pick one to take it apart.</p>
-        <div class="seg" role="group" aria-label="Arrange crests">
-          <button data-mode="grid" aria-pressed="true">By house</button>
-          <button data-mode="symmetry" aria-pressed="false">By symmetry</button>
-          <button data-mode="motif" aria-pressed="false">By motif</button>
-          <button data-mode="side" aria-pressed="false">At Sekigahara</button>
+    <section class="slide frame" id="gallery" aria-labelledby="gallery-title">
+      <div class="frame-side">
+        <div class="vmenu" role="group" aria-label="Arrange the houses">
+          <button data-mode="grid" aria-pressed="true"><span lang="ja">家ごと</span><small>By house</small></button>
+          <button data-mode="symmetry" aria-pressed="false"><span lang="ja">対称</span><small>By symmetry</small></button>
+          <button data-mode="motif" aria-pressed="false"><span lang="ja">紋様</span><small>By motif</small></button>
+          <button data-mode="side" aria-pressed="false"><span lang="ja">関ヶ原</span><small>At Sekigahara</small></button>
         </div>
+        <p class="side-text" id="gallery-text"></p>
       </div>
-      <div id="board" class="board"></div>
+      <div class="frame-main"><div id="board" class="board"></div></div>
+      <div class="frame-title">
+        <h2 id="gallery-title" class="tategaki" lang="ja">二十の家</h2>
+        <p class="vt-en">Twenty houses</p>
+      </div>
     </section>
 
-    <section id="anatomy" class="section anatomy">
-      <div class="stage-col">
-        <div class="stage-wrap">
-          <svg id="stage" viewBox="0 0 1000 1000" role="img"></svg>
+    <section class="slide frame anatomy" id="anatomy" aria-labelledby="ana-title">
+      <div class="frame-side">
+        <div id="info" class="info"></div>
+        <div class="vmenu" id="steps" role="group" aria-label="Ways to take the crest apart">
+          <button data-step="whole"><span lang="ja">一 全体</span><small>Whole</small></button>
+          <button data-step="pieces"><span lang="ja">二 部品</span><small>Pieces</small></button>
+          <button data-step="symmetry"><span lang="ja">三 対称</span><small>Symmetry</small></button>
+          <button data-step="unit"><span lang="ja">四 単位</span><small>Unit</small></button>
+          <button data-step="compass"><span lang="ja">五 作図</span><small>Compass</small></button>
         </div>
-        <ol class="steps" id="steps" aria-label="Ways to take the crest apart">
-          <li><button data-step="whole">Whole</button></li>
-          <li><button data-step="pieces">Pieces</button></li>
-          <li><button data-step="symmetry">Symmetry</button></li>
-          <li><button data-step="unit">Unit</button></li>
-          <li><button data-step="compass">Compass</button></li>
-        </ol>
-        <p class="step-cap" id="step-cap"></p>
+        <p class="side-text" id="step-cap"></p>
       </div>
-      <div class="info-col" id="info"></div>
+      <div class="frame-main">
+        <svg id="stage" viewBox="-130 -130 1260 1260" role="img"></svg>
+        <div class="strip" id="strip" role="group" aria-label="Choose a crest"></div>
+      </div>
+      <div class="frame-title">
+        <h2 id="ana-title" class="tategaki" lang="ja"></h2>
+        <p class="vt-en" id="ana-en"></p>
+      </div>
     </section>
 
-    <section id="workshop" class="section workshop">
-      <div class="section-head">
-        <h2>Workshop</h2>
-        <p>Every crest in this workshop is built from the same parts as the real ones: a motif, repeated in an arrangement, inside an enclosure. The name updates as you build, following the traditional naming rules.</p>
-      </div>
-      <div class="ws-grid">
-        <form class="controls" id="controls" onsubmit="return false"></form>
-        <div class="ws-stage">
-          <div class="ws-name" id="ws-name"></div>
-          <div class="stage-wrap"><svg id="ws-svg" viewBox="-500 -500 1000 1000" role="img"></svg></div>
-          <div class="ws-actions">
-            <button id="ws-draw" class="primary">Draw with compass</button>
-            <label class="check"><input type="checkbox" id="ws-guides" /> Show guides</label>
-            <button id="ws-random">Surprise me</button>
-            <button id="ws-download">Download SVG</button>
+    <section class="slide workshop" id="workshop" aria-labelledby="ws-title">
+      <h2 id="ws-title" class="visually-hidden">Workshop: draw your own crest</h2>
+      <div class="ws-body">
+        <div class="ws-sketch" id="ws-sketch">
+          <svg class="leaders" id="ws-leaders" aria-hidden="true"></svg>
+          <div class="note tl" data-note="motif">
+            <p class="note-label"><b>01</b>Motif <output id="o-motif"></output></p>
+            <div class="glyphs" data-pick="motif"></div>
+          </div>
+          <div class="note tr" data-note="count">
+            <p class="note-label"><b>02</b><span id="count-label">How many</span></p>
+            <div class="vsliders" id="count-sliders"></div>
+          </div>
+          <div class="ws-crest"><svg id="ws-svg" viewBox="-500 -500 1000 1000" role="img"></svg></div>
+          <div class="note bl" data-note="r">
+            <p class="note-label"><b>03</b>Distance from centre</p>
+            <div class="vsliders" id="r-sliders"></div>
+          </div>
+          <div class="note br" data-note="size">
+            <p class="note-label"><b>04</b>Motif size</p>
+            <div class="vsliders" id="size-sliders"></div>
           </div>
         </div>
+        <div class="ws-name" id="ws-name"></div>
       </div>
-      <div class="field-head">
-        <h3>A field of crests</h3>
-        <p>Twenty-four random crests built from the grammar. Pick one to open it in the workshop.</p>
-        <button id="field-again">Make another field</button>
-      </div>
-      <div class="field" id="field"></div>
+      <form class="shelf" id="shelf" onsubmit="return false" aria-label="More controls"></form>
+    </section>
+
+    <section class="slide pattern" id="field" aria-labelledby="field-title">
+      <div class="weave" id="weave" aria-hidden="true"></div>
+      <h2 id="field-title" class="pattern-label">Patterns drawn by the grammar</h2>
     </section>
   </main>
 
