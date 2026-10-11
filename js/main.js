@@ -130,9 +130,9 @@ const board = $('#board');
 let mode = 'grid', active = 'oda';
 const SEKIGAHARA = 'Hideyoshi died in 1598, leaving a five-year-old heir. Tokugawa Ieyasu began to rule alone, and Ishida Mitsunari rallied the Toyotomi loyalists against him. On 21 October 1600 the two armies met at Sekigahara. Defections turned the day, and Ieyasu was shōgun three years later.';
 const MODES = {
-  grid: ['二十の家', 'Twenty houses . 1560–1600', '+ Pick a house'],
-  symmetry: ['対称', 'By symmetry . how each crest repeats', '+ Pick a house'],
-  motif: ['紋様', 'By motif . what each crest shows', '+ Pick a house'],
+  grid: ['二十の家', 'Twenty houses . 1560–1600', '+ Click a house to take it apart'],
+  symmetry: ['対称', 'By symmetry . how each crest repeats', '+ Click a house to take it apart'],
+  motif: ['紋様', 'By motif . what each crest shows', '+ Click a house to take it apart'],
   side: ['関ヶ原', 'At Sekigahara . 1600', SEKIGAHARA],
 };
 const SYM_COLS = [['none', 'None', 'freehand'], ['mirror', 'Mirror', 'one fold'], ['r2', '2-fold', '180°'], ['r3', '3-fold', '120°'], ['r4', '4-fold', '90°'], ['r5', '5-fold', '72°'], ['r6', '6-fold', '60°'], ['r8', '8-fold', '45°'], ['inf', 'Circle', 'any angle']];
