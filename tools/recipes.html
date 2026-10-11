@@ -1,0 +1,7 @@
+<!doctype html><link rel="stylesheet" href="../css/style.css"><style>body{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:10px}div{text-align:center;font-size:13px}svg{width:100%}</style>
+<script type=module>
+import {CLANS} from '../js/data.js'; import {crestMarkup} from '../js/render.js'; import {build} from '../js/grammar.js';
+const D=await (await fetch('../data/crests.json')).json();
+for(const c of CLANS.filter(c=>c.recipe)){
+ document.body.insertAdjacentHTML('beforeend',`<div><svg viewBox="-500 -500 1000 1000"><path d="${D[c.key].d}" transform="translate(-500 -500)" fill="#e2c25c" opacity=".55" fill-rule="evenodd"/><g opacity=".75">${crestMarkup(c.recipe)}</g></svg>${c.key} · ${build(c.recipe).name.jp}</div>`)}
+</script>

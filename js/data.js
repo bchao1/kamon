@@ -1,0 +1,139 @@
+// Twenty Sengoku houses. `motif` = what the crest depicts; `side` = where the house stood in 1600.
+// `recipe` (optional) = a compass-and-ruler reconstruction in the creator's grammar (see grammar.js).
+export const CLANS = [
+  {
+    key: 'oda', house: '織田', houseEn: 'Oda', lord: 'Oda Nobunaga', province: 'Owari',
+    mon: '織田木瓜', monEn: 'Oda mokkō', gloss: 'Five-lobed quince, a Chinese flower at its heart',
+    motif: 'plant', side: 'west',
+    note: 'Nobunaga started the push to reunify Japan. The mokkō may be a cross-section of a quince, or a bird’s nest seen from above; nobody agrees. By 1600 his grandson Hidenobu held Gifu for the West and lost it in a day.',
+    recipe: { enclosure: 'mokko', lobes: 5, layout: 'ring', motif: 'kikyo', n: 5, r: 0.2, size: 0.17, center: 'hoshi', centerSize: 0.07, style: 'hinata' },
+  },
+  {
+    key: 'tokugawa', house: '徳川', houseEn: 'Tokugawa', lord: 'Tokugawa Ieyasu', province: 'Mikawa',
+    mon: '三つ葉葵', monEn: 'Mitsuba aoi', gloss: 'Three hollyhock leaves in a ring',
+    motif: 'plant', side: 'east',
+    note: 'The leaf is really wild ginger. After 1600 the shogunate banned anyone else from using it, so these three leaves became the most protected image in Edo Japan.',
+    recipe: { enclosure: 'maru', layout: 'ring', motif: 'aoi', n: 3, r: 0.5, size: 0.53, aspect: 0.62, rot: 60, center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'toyotomi', house: '豊臣', houseEn: 'Toyotomi', lord: 'Toyotomi Hideyoshi', province: 'Owari',
+    mon: '五七桐', monEn: 'Go-shichi no kiri', gloss: 'Paulownia, blossoms in sprays of 5–7–5',
+    motif: 'plant', side: 'west',
+    note: 'Granted by the imperial court. Hideyoshi then handed lesser versions to his retainers, so paulownia crests spread across Japan. Today it is the seal of the Japanese government.',
+  },
+  {
+    key: 'takeda', house: '武田', houseEn: 'Takeda', lord: 'Takeda Shingen', province: 'Kai',
+    mon: '武田菱', monEn: 'Takeda-bishi', gloss: 'Four diamonds forming a larger diamond',
+    motif: 'geometric', side: 'fallen', fell: 1582,
+    note: 'Shingen’s cavalry was the most feared in the east. Four diamonds split by a cross may come from the water-chestnut leaf. The house was destroyed by Oda and Tokugawa in 1582.',
+    recipe: { enclosure: 'none', layout: 'ring', motif: 'hishi', n: 4, r: 0.345, size: 0.32, aspect: 1.5, upright: true, center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'uesugi', house: '上杉', houseEn: 'Uesugi', lord: 'Uesugi Kenshin', province: 'Echigo',
+    mon: '竹に雀', monEn: 'Take ni suzume', gloss: 'Two sparrows inside a ring of bamboo',
+    motif: 'animal', side: 'west',
+    note: 'Kenshin, “the Dragon of Echigo,” inherited this crest with the Uesugi name. In 1600 his heir Kagekatsu fought the Date and Mogami in the north instead of marching to Sekigahara.',
+  },
+  {
+    key: 'date', house: '伊達', houseEn: 'Date', lord: 'Date Masamune', province: 'Mutsu',
+    mon: '竹に雀', monEn: 'Sendai sasa', gloss: 'Sparrows in bamboo, the Uesugi crest made wilder',
+    motif: 'animal', side: 'east',
+    note: 'The Date got the sparrow crest from the Uesugi through an adoption. Masamune, “the One-Eyed Dragon,” let the bamboo grow out of the ring.',
+  },
+  {
+    key: 'sanada', house: '真田', houseEn: 'Sanada', lord: 'Sanada Yukimura', province: 'Shinano',
+    mon: '六文銭', monEn: 'Rokumonsen', gloss: 'Six coins, the ferry fare across the Sanzu river',
+    motif: 'object', side: 'split',
+    note: 'Six coins pay the ferryman of the dead, so the crest says a Sanada warrior is ready to die. In 1600 the family split on purpose: Yukimura and his father for the West, his brother for the East.',
+    recipe: { enclosure: 'none', layout: 'grid', motif: 'sen', rows: 2, cols: 3, size: 0.305, gap: 0.03, center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'mori', house: '毛利', houseEn: 'Mōri', lord: 'Mōri Motonari', province: 'Aki',
+    mon: '一文字に三つ星', monEn: 'Ichimonji ni mitsuboshi', gloss: 'The character “one” over three stars',
+    motif: 'script', side: 'west',
+    note: 'The three stars are Orion’s belt, the “General Star” of Chinese astronomy. Motonari’s heir Terumoto was the West’s nominal commander-in-chief, but stayed in Osaka castle and never fought.',
+    recipe: { enclosure: 'none', layout: 'mitsumori', motif: 'hoshi', size: 0.29, dy: 0.34, overlay: 'ichimonji', center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'shimazu', house: '島津', houseEn: 'Shimazu', lord: 'Shimazu Yoshihiro', province: 'Satsuma',
+    mon: '丸に十字', monEn: 'Maru ni jūji', gloss: 'A cross within a ring',
+    motif: 'geometric', side: 'west',
+    note: 'Older drawings show a cross of horse bits. When the West lost, Yoshihiro escaped by charging straight through the Eastern army, a retreat still famous today.',
+    recipe: { enclosure: 'maru', layout: 'single', motif: 'none', overlay: 'juji', center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'akechi', house: '明智', houseEn: 'Akechi', lord: 'Akechi Mitsuhide', province: 'Mino',
+    mon: '桔梗', monEn: 'Mizu-iro kikyō', gloss: 'Bellflower, traditionally dyed sky-blue',
+    motif: 'plant', side: 'fallen', fell: 1582,
+    note: 'Inherited from the Toki clan. Mitsuhide turned on Nobunaga at Honnō-ji in 1582 and was dead thirteen days later. In the history books, his bellflower stands for betrayal.',
+    recipe: { enclosure: 'none', layout: 'ring', motif: 'kikyo', n: 5, r: 0.51, size: 0.54, aspect: 0.95, center: 'stamen', centerSize: 0.06, style: 'hinata' },
+  },
+  {
+    key: 'imagawa', house: '今川', houseEn: 'Imagawa', lord: 'Imagawa Yoshimoto', province: 'Suruga',
+    mon: '赤鳥', monEn: 'Akadori', gloss: 'A horse-grooming comb',
+    motif: 'object', side: 'fallen', fell: 1560,
+    note: 'Legend says a goddess told the family that the comb would bring victory. Yoshimoto marched on Kyoto with 25,000 men and was killed at Okehazama by Nobunaga’s 2,000, the battle that made Nobunaga’s name.',
+  },
+  {
+    key: 'hojo', house: '北条', houseEn: 'Hōjō', lord: 'Hōjō Ujiyasu', province: 'Sagami',
+    mon: '三つ鱗', monEn: 'Mitsu uroko', gloss: 'Three dragon scales',
+    motif: 'geometric', side: 'fallen', fell: 1590,
+    note: 'In the legend, a dragon-woman at Enoshima left three scales behind as a sign. The Odawara Hōjō took the crest from the Kamakura regents and lost everything when Hideyoshi besieged Odawara in 1590.',
+    recipe: { enclosure: 'none', layout: 'mitsumori', motif: 'uroko', size: 0.46, aspect: 0.5, dy: -0.05, upright: true, center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'chosokabe', house: '長宗我部', houseEn: 'Chōsokabe', lord: 'Chōsokabe Motochika', province: 'Tosa',
+    mon: '七つ酢漿草', monEn: 'Nanatsu katabami', gloss: 'Seven wood-sorrel flowers in a ring',
+    motif: 'plant', side: 'west',
+    note: 'Wood sorrel spreads stubbornly and is hard to pull up. Motochika conquered all of Shikoku. His son chose the West at Sekigahara and lost the family’s lands.',
+    recipe: { enclosure: 'maru', layout: 'ring', motif: 'katabami', n: 6, r: 0.62, size: 0.38, center: 'same', centerSize: 0.38, style: 'hinata' },
+  },
+  {
+    key: 'ishida', house: '石田', houseEn: 'Ishida', lord: 'Ishida Mitsunari', province: 'Ōmi',
+    mon: '大一大万大吉', monEn: 'Daiichi daiman daikichi', gloss: '“One for all, all for one, and all will prosper”',
+    motif: 'script', side: 'west',
+    note: 'A crest made of words. Mitsunari organized the Western army and wrote his motto on his banners. Betrayed at Sekigahara, he was executed in Kyoto weeks later.',
+  },
+  {
+    key: 'maeda', house: '前田', houseEn: 'Maeda', lord: 'Maeda Toshiie', province: 'Kaga',
+    mon: '加賀梅鉢', monEn: 'Kaga umebachi', gloss: 'Plum blossom with sword-shaped stamens',
+    motif: 'plant', side: 'east',
+    note: 'The plum claims descent from the scholar Sugawara no Michizane, who loved plum trees. The Maeda sided East and became the richest lords in Japan after the shogun.',
+    recipe: { enclosure: 'none', layout: 'ring', motif: 'ume', n: 5, r: 0.66, size: 0.33, center: 'ken', centerSize: 0.32, style: 'hinata' },
+  },
+  {
+    key: 'hosokawa', house: '細川', houseEn: 'Hosokawa', lord: 'Hosokawa Tadaoki', province: 'Tango',
+    mon: '九曜', monEn: 'Kuyō', gloss: 'Nine luminaries: sun, moon, planets and eclipses',
+    motif: 'geometric', side: 'east',
+    note: 'One large star and eight small ones, from Indian astrology by way of Buddhism. Tadaoki’s wife Gracia died rather than become Ishida’s hostage, and Tadaoki fought for the East.',
+    recipe: { enclosure: 'none', layout: 'ring', motif: 'hoshi', n: 8, r: 0.77, size: 0.21, center: 'hoshi', centerSize: 0.37, style: 'hinata' },
+  },
+  {
+    key: 'kuroda', house: '黒田', houseEn: 'Kuroda', lord: 'Kuroda Kanbei', province: 'Buzen',
+    mon: '黒田藤巴', monEn: 'Kuroda fuji-domoe', gloss: 'Wisteria curled into a three-fold swirl',
+    motif: 'plant', side: 'east',
+    note: 'Wisteria drawn as a tomoe, the swirl motif. Kanbei was Hideyoshi’s strategist. His son Nagamasa persuaded Kobayakawa to switch sides, which decided Sekigahara.',
+  },
+  {
+    key: 'kato', house: '加藤', houseEn: 'Katō', lord: 'Katō Kiyomasa', province: 'Higo',
+    mon: '蛇の目', monEn: 'Janome', gloss: 'Snake’s eye, also a spare-bowstring reel',
+    motif: 'geometric', side: 'east',
+    note: 'The plainest crest of them all: a thick ring. Kiyomasa, a famous castle builder, held Kumamoto for the East.',
+    recipe: { enclosure: 'janome', layout: 'single', motif: 'none', center: 'none', style: 'hinata' },
+  },
+  {
+    key: 'ii', house: '井伊', houseEn: 'Ii', lord: 'Ii Naomasa', province: 'Kōzuke',
+    mon: '彦根橘', monEn: 'Hikone tachibana', gloss: 'Mandarin orange blossom in a ring',
+    motif: 'plant', side: 'east',
+    note: 'The tachibana stands for everlasting life. Naomasa’s “Red Devils” wore all-red armor, and his wound at Sekigahara troubled him until his death two years later.',
+  },
+  {
+    key: 'nabeshima', house: '鍋島', houseEn: 'Nabeshima', lord: 'Nabeshima Naoshige', province: 'Hizen',
+    mon: '杏葉', monEn: 'Gyōyō', gloss: 'Horse-harness ornaments shaped like apricot leaves',
+    motif: 'object', side: 'east',
+    note: 'Taken from the defeated Ōtomo after the battle of Imayama in 1570. The Nabeshima first fought for the West, then switched sides to keep their domain.',
+  },
+];
+
+export const MOTIF_LABEL = { plant: 'Plants', animal: 'Animals', geometric: 'Geometry', object: 'Objects', script: 'Writing' };
+export const SIDE_LABEL = { east: 'Eastern army', west: 'Western army', split: 'Both sides', fallen: 'Gone before 1600' };
