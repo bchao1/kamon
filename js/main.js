@@ -16,15 +16,19 @@ function symmetryOf(c) {
   const axes = [], top = Math.max(...c.mir);
   c.mir.forEach((v, i) => { const p = c.mir[(i + c.mir.length - 1) % c.mir.length], q = c.mir[(i + 1) % c.mir.length]; if (v >= 0.8 && v >= top - 0.1 && v >= p && v > q) axes.push(i * 2); });
   if (med > 0.95) return { n: Infinity, axes: [], key: 'inf' };
+  // n-fold if every multiple of 360/n overlaps well; the relative test catches near-round crests (the chrysanthemum)
   let n = 1;
-  for (let k = 2; k <= 12; k++) { let m = 1; for (let j = 1; j < k; j++) m = Math.min(m, at(c.rot, 2, (j * 360) / k)); if (m >= 0.83 && m - med >= 0.1) n = k; }
+  for (let k = 2; k <= 24; k++) { let m = 1; for (let j = 1; j < k; j++) m = Math.min(m, at(c.rot, 2, (j * 360) / k)); if (m >= 0.83 && (m - med >= 0.1 || (m - med) / (1 - med) >= 0.45)) n = k; }
   // n-fold rotation plus one mirror means n mirrors (dihedral group): fill in any the threshold missed
   if (n > 1 && axes.length) { const base = axes.reduce((b, a) => (Math.abs(a - 90) < Math.abs(b - 90) ? a : b)); axes.length = 0; for (let k = 0; k < n; k++) axes.push((base + (k * 180) / n) % 180); }
   return { n, axes, key: n > 1 ? `r${n}` : axes.length ? 'mirror' : 'none' };
 }
-for (const c of CLANS) Object.assign(c, { data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
+for (const c of CLANS) Object.assign(c, { kind: c.kind || 'buke', data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
+for (const c of CLANS) if (c.fold) { const { axes } = c.sym, base = axes[0] ?? 90; c.sym = { n: c.fold, axes: Array.from({ length: c.fold }, (_, k) => (base + (k * 180) / c.fold) % 180), key: `r${c.fold}` }; }
 
-const SYM_KEYS = ['none', 'mirror', 'r2', 'r3', 'r4', 'r5', 'r6', 'r8', 'inf'];
+// symmetry groups that actually occur, in order: none, mirror, 2-fold … n-fold, circle
+const SYM_KEYS = ['none', 'mirror', ...[...new Set(CLANS.filter((c) => c.sym.n > 1 && c.sym.n !== Infinity).map((c) => c.sym.n))].sort((a, b) => a - b).map((n) => `r${n}`), 'inf'];
+const symGroup = (k) => t('symGroups')[k] || [t('symFold', +k.slice(1)), t('symEvery', Math.round(360 / +k.slice(1)))];
 const symText = (s) => (s.n === Infinity ? t('symInf') : s.n > 1 ? t('symRot', s.n, s.axes.length) : s.axes.length ? t('symOneMirror') : t('symNone'));
 
 // ---------- small svg builders ----------
@@ -81,14 +85,14 @@ function layout() {
   const W = board.clientWidth, gap = 18, tiles = [...board.querySelectorAll('.tile')];
   const lblH = 52;
   if (mode === 'grid') {
-    const cols = W > 1100 ? 5 : W > 760 ? 4 : W > 480 ? 3 : 2, ts = (W - gap * (cols - 1)) / cols;
+    const cols = W > 1100 ? 8 : W > 760 ? 6 : W > 480 ? 4 : 3, ts = (W - gap * (cols - 1)) / cols;
     const tileH = ts + lblH;
     tiles.forEach((el, i) => { el.style.setProperty('--t', `${ts}px`); el.style.transform = `translate(${(i % cols) * (ts + gap)}px, ${Math.floor(i / cols) * (tileH + gap)}px)`; });
     board.style.height = `${Math.ceil(tiles.length / cols) * (tileH + gap)}px`;
     return;
   }
-  const groups = mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...t('symGroups')[k]]) : Object.entries(t(mode === 'motif' ? 'motifGroups' : 'sides')).map(([k, v]) => [k, v, '']);
-  const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : mode === 'motif' ? c.motif : c.side);
+  const groups = mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...symGroup(k)]) : mode === 'kind' ? Object.entries(t('kinds')).map(([k, [a, b]]) => [k, a, b]) : Object.entries(t(mode === 'motif' ? 'motifGroups' : 'sides')).map(([k, v]) => [k, v, '']);
+  const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : mode === 'motif' ? c.motif : mode === 'kind' ? c.kind : c.side);
   const biggest = Math.max(...groups.map(([gk]) => CLANS.filter((c) => keyOf(c) === gk).length));
   const narrow = W < 700, L = narrow ? 0 : 220, ts = narrow ? Math.min(110, (W - gap * 2) / 3) : Math.max(96, Math.min(132, (W - L) / biggest - gap)), per = Math.max(1, Math.floor((W - L + gap) / (ts + gap)));
   let y = 0;
@@ -97,11 +101,11 @@ function layout() {
     if (!members.length) continue;
     const lab = document.createElement('div');
     lab.className = 'row-label';
-    const subText = sub || (mode === 'side' && gk === 'fallen' ? t('destroyedRange') : t('houses', members.length));
+    const subText = (sub ? `${sub}<br>` : '') + t('houses', members.length);
     lab.innerHTML = `<b>${name}</b><span>${subText}</span>`;
     lab.style.transform = `translate(0, ${y + (narrow ? 0 : ts * 0.3)}px)`;
     board.append(lab);
-    if (narrow) y += 56;
+    if (narrow) y += sub ? 82 : 56;
     members.forEach((c, i) => {
       const el = board.querySelector(`.tile[data-key="${c.key}"]`);
       el.style.setProperty('--t', `${ts}px`);
@@ -140,9 +144,9 @@ function renderInfo() {
       <p class="romaji">${c.read}</p>
       <p class="gloss">${c.gloss}</p>
       <dl class="facts">
-        <dt>${t('lord')}</dt><dd>${c.lord}</dd>
-        <dt>${t('province')}</dt><dd>${c.province}</dd>
-        <dt>${t('in1600')}</dt><dd>${c.side === 'fallen' ? t('destroyed', c.fell) : t('sides')[c.side]}</dd>
+        <dt>${t('lordBy')[c.kind]}</dt><dd>${c.lord}</dd>
+        <dt>${t('provBy')[c.kind]}</dt><dd>${c.province}</dd>
+        ${c.kind === 'buke' ? `<dt>${t('in1600')}</dt><dd>${c.side === 'fallen' ? t('destroyed', c.fell) : t('sides')[c.side]}</dd>` : ''}
       </dl>
       <p class="note">${c.note}</p>
       <div class="stats">
@@ -323,7 +327,7 @@ $('#field-again').onclick = () => field((Math.random() * 1e9) | 0);
 // ---------- language ----------
 function applyStatic() {
   document.title = t('title');
-  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n)));
+  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n, CLANS.length)));
   document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
   const sw = $('#lang-switch');
   sw.setAttribute('aria-label', t('langLabel'));

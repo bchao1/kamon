@@ -20,9 +20,13 @@ const page = await browser.newPage();
 await page.goto('about:blank');
 const masks = {};
 for (const key of Object.keys(KEYS)) {
-  const svg = fs.readFileSync(`${ROOT}/assets/crests/${key}.svg`, 'utf8');
-  masks[key] = await page.evaluate(async ({ svg, N }) => {
-    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  const ext = KEYS[key].ext || '.svg'; // a few sources are PNG / JPG
+  const b64 = fs.readFileSync(`${ROOT}/assets/crests/${key}${ext}`).toString('base64');
+  const mime = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' }[ext];
+  const cut = KEYS[key].threshold || 128; // light-coloured sources (the gold imperial seal) need a higher cut
+  masks[key] = await page.evaluate(async ({ b64, mime, N, cut }) => {
+    const bin = Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bin], { type: mime }));
     const img = new Image();
     img.src = url;
     await img.decode();
@@ -50,7 +54,7 @@ for (const key of Object.keys(KEYS)) {
     let x0 = W, y0 = H, x1 = 0, y1 = 0;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x, onEdge = x < edge || y < edge || x >= W - edge || y >= H - edge;
-      const v = !onEdge && (bgDark ? lum(i) > 128 : lum(i) < 128);
+      const v = !onEdge && (bgDark ? lum(i) > 128 : lum(i) < cut);
       if (v) { ink[i] = 1; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }
     // centered square crop with a small margin → N×N
@@ -67,7 +71,7 @@ for (const key of Object.keys(KEYS)) {
     const buf = new Uint8Array(await blob.arrayBuffer());
     let s = ''; for (const b of buf) s += String.fromCharCode(b);
     return { png: btoa(s), bgDark };
-  }, { svg, N });
+  }, { b64, mime, N, cut });
   fs.writeFileSync(`${ROOT}/assets/masks/${key}.png`, Buffer.from(masks[key].png, 'base64'));
   console.log('mask', key, masks[key].bgDark ? '(inverted source)' : '');
 }
@@ -109,9 +113,9 @@ function maskPng(pred) {
   return PNG.sync.write(png);
 }
 
-// symmetry fingerprints on a 160px copy: IoU of the crest with itself rotated by θ / mirrored about φ
+// symmetry fingerprints on a 320px copy: IoU of the crest with itself rotated by θ / mirrored about φ
 function fingerprints(bin) {
-  const M = 160, s = N / M, small = new Uint8Array(M * M);
+  const M = 320, s = N / M, small = new Uint8Array(M * M);
   for (let y = 0; y < M; y++) for (let x = 0; x < M; x++) small[y * M + x] = bin[Math.floor((y + 0.5) * s) * N + Math.floor((x + 0.5) * s)];
   // rotate / reflect about the ink centroid: a pentagon's bbox centre is not its rotation centre
   let sx = 0, sy = 0, n = 0;

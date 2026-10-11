@@ -1,4 +1,5 @@
-// Twenty Sengoku houses. `motif` = what the crest depicts; `side` = where the house stood in 1600.
+// Crests and who wears them. `kind`: 'buke' (warrior house, the default), 'heian' (源平藤橘), 'imperial',
+// 'buddhist'. `motif` = what the crest depicts; `side` = where the house stood in 1600 ('none' if not a warrior house).
 // `recipe` (optional) = a compass-and-ruler reconstruction in the creator's grammar (see grammar.js);
 // `fit` = its overlap (IoU) with the original, measured by tools/fit.html.
 export const CLANS = [
@@ -134,5 +135,206 @@ export const CLANS = [
     motif: 'object', side: 'east',
     note: 'Taken from the defeated Ōtomo after the battle of Imayama in 1570. The Nabeshima first fought for the West, then switched sides to keep their domain.',
   },
+  // ---- more Sengoku houses ----
+  {
+    key: 'ashikaga', house: '足利', houseEn: 'Ashikaga', lord: 'Ashikaga Yoshiaki', province: 'Yamashiro',
+    mon: '足利二つ引両', monEn: 'Ashikaga futatsu hikiryō', gloss: 'Two bars in a ring',
+    motif: 'geometric', side: 'fallen', fell: 1573,
+    note: 'The crest of the Ashikaga shoguns, who ruled from Kyoto from 1338. Branch houses such as the Imagawa, Shiba and Mogami wore it too. Nobunaga drove the last shogun, Yoshiaki, out of Kyoto in 1573.',
+  },
+  {
+    key: 'satake', house: '佐竹', houseEn: 'Satake', lord: 'Satake Yoshinobu', province: 'Hitachi',
+    mon: '扇に月丸', monEn: 'Ōgi ni tsukimaru', gloss: 'A folding fan with a round moon',
+    motif: 'object', side: 'neutral',
+    note: 'The fan is said to have been a gift from Minamoto no Yoritomo. In 1600 Yoshinobu leaned toward the West but never marched, and Ieyasu moved the family from Hitachi to far-off Akita.',
+  },
+  {
+    key: 'nanbu', house: '南部', houseEn: 'Nanbu', lord: 'Nanbu Nobunao', province: 'Mutsu',
+    mon: '南部鶴', monEn: 'Nanbu tsuru', gloss: 'Two cranes facing each other in a ring',
+    motif: 'animal', side: 'east',
+    note: 'Cranes stand for long life. The Nanbu ruled the far north of Honshu. In 1600 Nobunao sided with the East and spent the year putting down a revolt in his own lands.',
+  },
+  {
+    key: 'nagao', house: '長尾', houseEn: 'Nagao', lord: 'Nagao Kagetora', province: 'Echigo',
+    mon: '九曜巴', monEn: 'Kuyō tomoe', gloss: 'Nine swirls: one large, eight small',
+    motif: 'geometric', side: 'fallen', fell: 1561,
+    note: 'Uesugi Kenshin was born Nagao Kagetora. In 1561 he took the Uesugi name, and the bamboo-and-sparrows crest with it.',
+  },
+  {
+    key: 'naoe', house: '直江', houseEn: 'Naoe', lord: 'Naoe Kanetsugu', province: 'Echigo',
+    mon: '三盛亀甲に三つ葉', monEn: 'Mitsumori kikkō ni mitsuba', gloss: 'Three tortoiseshell hexagons, each with a three-leaf sprig',
+    motif: 'geometric', side: 'west',
+    note: 'Kanetsugu was chief retainer of the Uesugi, famous for the character 愛 (“love”) on his helmet. His defiant letter to Ieyasu helped start the 1600 campaign.',
+  },
+  {
+    key: 'miyoshi', house: '三好', houseEn: 'Miyoshi', lord: 'Miyoshi Nagayoshi', province: 'Awa',
+    mon: '三階菱に五つ釘抜', monEn: 'Sangai-bishi ni itsutsu kuginuki', gloss: 'Three stacked diamonds over five nail-pullers',
+    motif: 'geometric', side: 'fallen', fell: 1582,
+    note: 'Before Nobunaga, Nagayoshi held Kyoto and the home provinces, the first strongman of the age. His heirs lost their lands to Nobunaga and to the Chōsokabe.',
+  },
+  {
+    key: 'rokkaku', house: '六角', houseEn: 'Rokkaku', lord: 'Rokkaku Yoshikata', province: 'Ōmi',
+    mon: '隅立て四つ目結', monEn: 'Sumitate yotsume-yui', gloss: 'Four tie-dyed squares in a diamond',
+    motif: 'geometric', side: 'fallen', fell: 1568,
+    note: 'A tie-dye pattern inherited from the Sasaki clan. The Rokkaku ruled southern Ōmi until Nobunaga swept through on his way to Kyoto in 1568.',
+  },
+  {
+    key: 'asai', house: '浅井', houseEn: 'Azai', lord: 'Azai Nagamasa', province: 'Ōmi',
+    mon: '三盛亀甲に花菱', monEn: 'Mitsumori kikkō ni hanabishi', gloss: 'Three tortoiseshells with flower diamonds',
+    motif: 'geometric', side: 'fallen', fell: 1573,
+    note: 'Nagamasa married Nobunaga’s sister Oichi, then turned on him. Odani castle fell in 1573. His daughters lived on: one became Hideyoshi’s consort Yodo, another the wife of the second Tokugawa shogun.',
+  },
+  {
+    key: 'saito', house: '斎藤', houseEn: 'Saitō', lord: 'Saitō Dōsan', province: 'Mino',
+    mon: '二頭立波', monEn: 'Nitō tatsunami', gloss: 'Two rising waves',
+    motif: 'geometric', side: 'fallen', fell: 1567,
+    note: 'Dōsan, the “Viper of Mino,” is said to have risen from oil seller to lord of a province. His grandson lost Inabayama castle to Nobunaga in 1567, and Nobunaga renamed it Gifu.',
+  },
+  {
+    key: 'asakura', house: '朝倉', houseEn: 'Asakura', lord: 'Asakura Yoshikage', province: 'Echizen',
+    mon: '三盛木瓜', monEn: 'Mitsumori mokkō', gloss: 'Three quince crests, piled',
+    motif: 'plant', side: 'fallen', fell: 1573,
+    note: 'They ruled Echizen from Ichijōdani, a castle town now excavated and partly rebuilt. Yoshikage stood with the Azai against Nobunaga, and both houses fell within weeks in 1573.',
+  },
+  {
+    key: 'ouchi', house: '大内', houseEn: 'Ōuchi', lord: 'Ōuchi Yoshitaka', province: 'Suō',
+    mon: '大内菱', monEn: 'Ōuchi-bishi', gloss: 'A diamond of flowering vines',
+    motif: 'geometric', side: 'fallen', fell: 1557,
+    note: 'Trade with Ming China and Korea made the Ōuchi rich and Yamaguchi a “little Kyoto.” Yoshitaka was overthrown by his retainer in 1551, and Mōri Motonari finished the house in 1557.',
+  },
+  {
+    key: 'otomo', house: '大友', houseEn: 'Ōtomo', lord: 'Ōtomo Sōrin', province: 'Bungo',
+    mon: '抱き花杏葉', monEn: 'Daki-hana gyōyō', gloss: 'Two apricot-leaf ornaments around a flower',
+    motif: 'object', side: 'west',
+    note: 'Sōrin was baptised a Christian and sent envoys to Rome. In 1600 his son Yoshimune tried to win back Bungo for the West and was beaten at Ishigakibaru.',
+  },
+  {
+    key: 'tachibana', house: '立花', houseEn: 'Tachibana', lord: 'Tachibana Muneshige', province: 'Chikugo',
+    mon: '祇園守', monEn: 'Gion mamori', gloss: 'A charm from the Gion shrine',
+    motif: 'object', side: 'west',
+    note: 'Hideyoshi called Muneshige the bravest man in the west. He fought for the West and lost his lands, then became the only daimyo to win his original domain back, in 1620.',
+  },
+  {
+    key: 'ryuzoji', house: '龍造寺', houseEn: 'Ryūzōji', lord: 'Ryūzōji Takanobu', province: 'Hizen',
+    mon: '抱き杏葉', monEn: 'Daki gyōyō', gloss: 'Two apricot-leaf ornaments, embracing',
+    motif: 'object', side: 'fallen', fell: 1584,
+    note: 'Takanobu, the “Bear of Hizen,” was killed at Okitanawate in 1584. His retainer Nabeshima Naoshige quietly took over the domain, and the Nabeshima crest is a variant of this one.',
+  },
+  {
+    key: 'asano', house: '浅野', houseEn: 'Asano', lord: 'Asano Nagamasa', province: 'Kai',
+    mon: '丸に違い鷹の羽', monEn: 'Maru ni chigai taka no ha', gloss: 'Crossed hawk feathers in a ring',
+    motif: 'animal', side: 'east',
+    note: 'Hawk feathers stand for martial courage. Nagamasa was Hideyoshi’s brother-in-law but sided East; the family later ruled Hiroshima. A branch held Akō, the domain of the 47 rōnin.',
+  },
+  {
+    key: 'kobayakawa', house: '小早川', houseEn: 'Kobayakawa', lord: 'Kobayakawa Hideaki', province: 'Chikuzen',
+    mon: '左三つ巴', monEn: 'Hidari mitsudomoe', gloss: 'Three swirls turning left',
+    motif: 'geometric', side: 'switched',
+    note: 'Hideaki held Mount Matsuo with 15,000 men for the West. At midday he changed sides and charged the Ōtani lines, deciding the battle. He died two years later without an heir. It mirrors the Shingon swirl.',
+  },
+  {
+    key: 'ukita', house: '宇喜多', houseEn: 'Ukita', lord: 'Ukita Hideie', province: 'Bizen',
+    mon: '児文字', monEn: 'Ji-monji', gloss: 'The character 児 (“child”)',
+    motif: 'script', side: 'west',
+    note: 'One of Hideyoshi’s five regents, Hideie brought the West’s largest army to Sekigahara. Exiled to the island of Hachijō, he lived until 1655, outliving everyone else who fought that day.',
+  },
+  {
+    key: 'fukushima', house: '福島', houseEn: 'Fukushima', lord: 'Fukushima Masanori', province: 'Owari',
+    mon: '福島沢瀉', monEn: 'Fukushima omodaka', gloss: 'Arrowhead leaves and flowers',
+    motif: 'plant', side: 'east',
+    note: 'Arrowhead leaves look like spear points, a warrior favourite. Masanori grew up beside Hideyoshi, led the East’s vanguard, won Hiroshima, then lost it for repairing his castle without permission.',
+  },
+  {
+    key: 'todo', house: '藤堂', houseEn: 'Tōdō', lord: 'Tōdō Takatora', province: 'Iyo',
+    mon: '藤堂蔦', monEn: 'Tōdō tsuta', gloss: 'An ivy leaf',
+    motif: 'plant', side: 'east',
+    note: 'Ivy clings and spreads. Takatora served seven masters and was the great castle builder of the age: Imabari, Tsu, Iga Ueno, and work on Edo castle.',
+  },
+  {
+    key: 'yamauchi', house: '山内', houseEn: 'Yamauchi', lord: 'Yamauchi Kazutoyo', province: 'Tosa',
+    mon: '土佐柏', monEn: 'Tosa gashiwa', gloss: 'Three oak leaves in a ring',
+    motif: 'plant', side: 'east',
+    note: 'Oak leaves once held offerings to the gods. Kazutoyo was given Tosa, the old Chōsokabe lands, for siding East. His wife Chiyo is remembered for buying him a fine horse with her savings.',
+  },
+  {
+    key: 'gamo', house: '蒲生', houseEn: 'Gamō', lord: 'Gamō Ujisato', province: 'Mutsu',
+    mon: '対い鶴', monEn: 'Mukai tsuru', gloss: 'Two cranes facing each other',
+    motif: 'animal', side: 'east',
+    note: 'Ujisato married Nobunaga’s daughter, became a Christian, and built Aizu-Wakamatsu castle. In 1600 his son Hideyuki held Utsunomiya for the East, watching the Uesugi.',
+  },
+  {
+    key: 'honda', house: '本多', houseEn: 'Honda', lord: 'Honda Tadakatsu', province: 'Kazusa',
+    mon: '本多立葵', monEn: 'Honda tachi-aoi', gloss: 'A hollyhock standing on its stem',
+    motif: 'plant', side: 'east',
+    note: 'The Honda served the Tokugawa from their Mikawa days and kept a hollyhock of their own. Tadakatsu, in his antlered helmet, fought some fifty battles without a wound.',
+  },
+  {
+    key: 'sakai', house: '酒井', houseEn: 'Sakai', lord: 'Sakai Tadatsugu', province: 'Mikawa',
+    mon: '酒井片喰', monEn: 'Sakai katabami', gloss: 'Wood sorrel',
+    motif: 'plant', side: 'east',
+    note: 'Tadatsugu was first of the Tokugawa “Four Heavenly Kings.” Wood sorrel spreads and is hard to root out, the same wish as the Chōsokabe crest.',
+  },
+  {
+    key: 'sakakibara', house: '榊原', houseEn: 'Sakakibara', lord: 'Sakakibara Yasumasa', province: 'Kōzuke',
+    mon: '源氏車', monEn: 'Genji-guruma', gloss: 'The wheel of a court oxcart',
+    motif: 'object', side: 'east',
+    note: 'Another of the Four Heavenly Kings. In 1600 Yasumasa marched with Hidetada’s army, which was held up at Ueda castle by the Sanada and reached Sekigahara too late.',
+  },
+  // ---- the four great Heian clans: 源平藤橘 ----
+  {
+    key: 'genji', kind: 'heian', house: '源氏', houseEn: 'Minamoto', lord: 'Minamoto no Yoritomo', province: 'Heian–Kamakura',
+    mon: '笹竜胆', monEn: 'Sasa rindō', gloss: 'Gentian flowers over bamboo leaves',
+    motif: 'plant', side: 'none',
+    note: 'The Minamoto were imperial princes made commoners. Yoritomo destroyed the Taira in 1185 and became the first shogun. The Ashikaga, Takeda and Tokugawa all claimed Minamoto descent, the qualification for the title of shogun.',
+  },
+  {
+    key: 'heike', kind: 'heian', house: '平氏', houseEn: 'Taira', lord: 'Taira no Kiyomori', province: 'Heian',
+    mon: '揚羽蝶', monEn: 'Ageha-chō', gloss: 'A swallowtail butterfly with raised wings',
+    motif: 'animal', side: 'none',
+    note: 'Kiyomori ruled the court in the 1170s; the clan was destroyed at Dan-no-ura in 1185. The butterfly passed to houses claiming Taira descent, the Oda among them.',
+  },
+  {
+    key: 'fujiwara', kind: 'heian', house: '藤原氏', houseEn: 'Fujiwara', lord: 'Fujiwara no Michinaga', province: 'Heian',
+    mon: '下り藤', monEn: 'Sagari-fuji', gloss: 'Hanging wisteria',
+    motif: 'plant', side: 'none',
+    note: 'For three centuries the Fujiwara married daughters to emperors and ruled as regents. Families named Satō, Itō and Katō, each with the 藤 of Fujiwara, claim descent.',
+  },
+  {
+    key: 'tachibanauji', kind: 'heian', house: '橘氏', houseEn: 'Tachibana', lord: 'Tachibana no Moroe', province: 'Nara–Heian',
+    mon: '橘', monEn: 'Tachibana', gloss: 'A mandarin orange with leaves',
+    motif: 'plant', side: 'none',
+    note: 'The smallest of the four great clans. A tachibana tree stands beside the Kyoto imperial palace, and the fruit means long life. The Ii of Hikone wear a version of it.',
+  },
+  // ---- the imperial house ----
+  {
+    key: 'imperial', kind: 'imperial', house: '皇室', houseEn: 'Imperial house', lord: 'The emperor', province: 'Kamakura period',
+    mon: '十六八重表菊', monEn: 'Jūrokuyō yae-omote-giku', gloss: 'A sixteen-petal double chrysanthemum',
+    motif: 'plant', side: 'none', fold: 16, // the source draws each petal’s outline over its neighbour, which hides the 16-fold design from the pixel test
+    note: 'Emperor Go-Toba (r. 1183–1198) loved chrysanthemums and put them on his swords and robes. Since 1869 this double 16-petal form has been reserved for the emperor; Japanese passports use a single-row version.',
+  },
+  // ---- Buddhist sects ----
+  {
+    key: 'shingon', kind: 'buddhist', house: '真言宗', houseEn: 'Shingon', lord: 'Kūkai', province: 'Kōyasan Kongōbu-ji',
+    mon: '三つ巴', monEn: 'Mitsudomoe', gloss: 'Three swirls turning right',
+    motif: 'geometric', side: 'none',
+    note: 'Kūkai brought esoteric Buddhism back from China in 806 and founded the temples on Mount Kōya. The sect uses both the three swirls and the 5-3 paulownia. Compare the Kobayakawa swirl, its mirror image.',
+  },
+  {
+    key: 'soto', kind: 'buddhist', house: '曹洞宗', houseEn: 'Sōtō Zen', lord: 'Dōgen', province: 'Eihei-ji, Sōji-ji',
+    mon: '久我竜胆', monEn: 'Koga rindō', gloss: 'A wheel of gentian flowers and leaves',
+    motif: 'plant', side: 'none',
+    note: 'Dōgen was born into the noble Koga family, and Eihei-ji uses their gentian. The sect’s other head temple, Sōji-ji, uses the 5-7 paulownia, and Sōtō counts both as its crests.',
+  },
+  {
+    key: 'nichiren', kind: 'buddhist', house: '日蓮宗', houseEn: 'Nichiren', lord: 'Nichiren', province: 'Minobu Kuon-ji',
+    mon: '井桁に橘', monEn: 'Igeta ni tachibana', gloss: 'A mandarin orange inside a well frame',
+    motif: 'plant', side: 'none',
+    note: 'Nichiren taught that chanting the title of the Lotus Sutra was enough to be saved. Tradition links the well frame and orange to the Ii family, from which his father is said to have come.',
+  },
+  {
+    key: 'hongwanji', kind: 'buddhist', house: '浄土真宗本願寺派', houseEn: 'Jōdo Shinshū Hongwanji', lord: 'Shinran', province: 'Nishi Hongan-ji',
+    mon: '下り藤', monEn: 'Sagari-fuji', gloss: 'Hanging wisteria, in the Kujō family form',
+    motif: 'plant', side: 'none',
+    note: 'Japan’s largest Buddhist sect. The 22nd abbot, Ōtani Kōzui, adopted this wisteria from the Kujō court family; before that the temple used the chrysanthemum, the 5-7 paulownia and the crane.',
+  },
 ];
-
