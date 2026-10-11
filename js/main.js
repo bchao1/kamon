@@ -422,11 +422,11 @@ const ws = (() => {
   const icons = (key, label, set, names) => `<div class="grp" data-for="${key}"><span id="k-${key}">${label}</span><div class="icons" data-pick="${key}" role="group" aria-labelledby="k-${key}">${Object.keys(set).map((k) => `<button type="button" data-v="${k}" aria-pressed="false" aria-label="${names[k]}" title="${names[k]}">${icon(set[k])}</button>`).join('')}</div></div>`;
   const stepper = (key, label, extra = '') => `<div class="grp" data-for="${key}"><span>${label}<output data-out="${key}"></output></span><div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${label}: less">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${label}: more">›</button></div></div>`;
   $('#shelf').innerHTML = '<div class="controls">' + [
-    icons('layout', 'Arrangement', ICON.layout, LAYOUTS),
     icons('center', 'Centre', ICON.center, { none: 'No centre', hoshi: 'Star', stamen: 'Stamens', ken: 'Sword stamens', same: 'Repeat the motif' }),
     icons('overlay', 'Overlay', ICON.overlay, { none: 'No overlay', juji: 'Cross', ichimonji: 'The character 一', hiki1: 'One bar', hiki2: 'Two bars', hiki3: 'Three bars' }),
     icons('style', 'Style', ICON.style, { hinata: 'Solid (hinata)', kage: 'Outline (kage)' }),
     stepper('rot', 'Turn', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>'),
+    icons('layout', 'Arrangement', ICON.layout, LAYOUTS),
     stepper('aspect', 'Stretch'), stepper('dy', 'Shift down'), stepper('lobes', 'Quince lobes'),
   ].join('') + '</div>' + [
     `<div class="actions"><button type="button" class="primary" id="ws-draw">Draw with compass</button><button type="button" id="ws-guides" aria-pressed="false">Guides</button><button type="button" id="ws-random">Surprise me</button><button type="button" id="ws-download">Download SVG</button></div>`,
