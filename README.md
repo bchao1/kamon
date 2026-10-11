@@ -2,6 +2,8 @@
 
 Twenty Sengoku-era clan crests (kamon): a sortable gallery, a five-step deconstruction of each crest, and a workshop that generates new crests from the same grammar and names them by the traditional rules.
 
+Live: https://bchao1.github.io/kamon/
+
 ```
 npm run serve          # python3 -m http.server 8765 → http://localhost:8765
 npm run normalize      # re-run the crest pipeline (needs Chrome + playwright-core from ../rider-maker)
