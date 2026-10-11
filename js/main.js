@@ -382,8 +382,8 @@ function setStep(s, fresh) {
 $('#steps').onclick = (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setStep(b.dataset.step); };
 
 // ================= DRAW YOUR OWN =================
-// The crest sits in the middle like a sketch. Six notes point into the part each one changes;
-// everything else is on the shelf underneath, drawn as small pictures of what it does.
+// The crest sits in the middle. Every choice is drawn as a symbol, in vertical columns on the left;
+// every number is a brush stroke on the right, as long as its value. Each group is named by one kanji.
 const f1 = (n) => +n.toFixed(1);
 const C = (x, y, r) => `M${f1(x - r)} ${f1(y)}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
 const Rc = (x, y, w, h) => `M${x} ${y}h${w}v${h}h${-w}Z`;
@@ -401,125 +401,103 @@ const icon = (d) => `<svg viewBox="-50 -50 100 100" aria-hidden="true"><path d="
 const range = (a, b, s) => Array.from({ length: Math.round((b - a) / s) + 1 }, (_, i) => +(a + i * s).toFixed(2));
 const LADDERS = { n: range(1, 12, 1), rows: range(1, 4, 1), cols: range(1, 4, 1), r: range(0.05, 0.9, 0.05), size: range(0.1, 1, 0.05), centerSize: [0.03, 0.05, 0.07, 0.1, 0.13, 0.16, 0.2, 0.25, 0.3, 0.35, 0.42, 0.5] };
 const ws = (() => {
-  let spec = { ...DEFAULT };
-  const root = $('#workshop'), svg = $('#ws-svg'), sketch = $('#ws-sketch'), leaders = $('#ws-leaders');
+  let spec = { ...DEFAULT }, guides = false;
+  const root = $('#workshop'), svg = $('#ws-svg');
   const mini = (s) => `<svg viewBox="-500 -500 1000 1000" aria-hidden="true">${crestMarkup(s)}</svg>`;
   const motifSpec = (k) => ({ enclosure: 'none', layout: 'single', motif: k, size: 0.85, aspect: k === 'uroko' ? 0.866 : 0.75, center: 'none' });
   const encSpec = (k) => ({ enclosure: k, layout: 'single', motif: k === 'none' ? 'hoshi' : 'none', size: 0.12, lobes: 4 });
   const encName = (k) => (k === 'none' ? 'None' : ENCLOSURES[k].en.replace(/^in an? /, '').replace('tortoiseshell ', '').replace(' outline', ''));
-  $('[data-pick="motif"]', root).innerHTML = Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => `<button type="button" data-v="${k}" aria-pressed="false" aria-label="${MOTIFS[k].en}" title="${MOTIFS[k].en}">${mini(motifSpec(k))}</button>`).join('');
-  $('[data-pick="enclosure"]', root).innerHTML = Object.keys(ENCLOSURES).map((k) => `<button type="button" data-v="${k}" aria-pressed="false" aria-label="${encName(k)}" title="${encName(k)}">${mini(encSpec(k))}</button>`).join('');
-  // a ladder is a vertical scale of ticks: filled up to the value, the value itself long and yellow
-  const ladder = (key, label, caption = '') => `<div class="ladder" data-for="${key}"><div role="slider" tabindex="0" aria-label="${label}" data-key="${key}">${LADDERS[key].map((v) => `<button type="button" class="tick" tabindex="-1" aria-hidden="true" data-key="${key}" data-v="${v}"><span></span></button>`).join('')}</div>${caption ? `<small>${caption}</small>` : ''}</div>`;
-  $('#l-count').innerHTML = ladder('n', 'How many') + ladder('rows', 'Rows', 'rows') + ladder('cols', 'Columns', 'cols') + '<p class="fixed" data-for="fixed"></p>';
-  $('#l-r').innerHTML = ladder('r', 'Distance from centre');
-  $('#l-size').innerHTML = ladder('size', 'Motif size');
-  $('#l-cs').innerHTML = ladder('centerSize', 'Centre size');
-  const icons = (key, label, set, names) => `<div class="grp" data-for="${key}"><span id="k-${key}">${label}</span><div class="icons" data-pick="${key}" role="group" aria-labelledby="k-${key}">${Object.keys(set).map((k) => `<button type="button" data-v="${k}" aria-pressed="false" aria-label="${names[k]}" title="${names[k]}">${icon(set[k])}</button>`).join('')}</div></div>`;
-  const stepper = (key, label, extra = '') => `<div class="grp" data-for="${key}"><span>${label}<output data-out="${key}"></output></span><div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${label}: less">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${label}: more">›</button></div></div>`;
-  $('#shelf').innerHTML = '<div class="controls">' + [
-    icons('center', 'Centre', ICON.center, { none: 'No centre', hoshi: 'Star', stamen: 'Stamens', ken: 'Sword stamens', same: 'Repeat the motif' }),
-    icons('overlay', 'Overlay', ICON.overlay, { none: 'No overlay', juji: 'Cross', ichimonji: 'The character 一', hiki1: 'One bar', hiki2: 'Two bars', hiki3: 'Three bars' }),
-    icons('style', 'Style', ICON.style, { hinata: 'Solid (hinata)', kage: 'Outline (kage)' }),
-    stepper('rot', 'Turn', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>'),
-    icons('layout', 'Arrangement', ICON.layout, LAYOUTS),
-    stepper('aspect', 'Stretch'), stepper('dy', 'Shift down'), stepper('lobes', 'Quince lobes'),
-  ].join('') + '</div>' + [
+  const NAMES = {
+    layout: LAYOUTS,
+    center: { none: 'No centre', hoshi: 'Star', stamen: 'Stamens', ken: 'Sword stamens', same: 'Repeat the motif' },
+    overlay: { juji: 'Cross', ichimonji: 'The character 一', hiki1: 'One bar', hiki2: 'Two bars', hiki3: 'Three bars' },
+    style: { hinata: 'Solid (hinata)', kage: 'Outline (kage)' },
+  };
+  // a group of symbols: its kanji (English on hover) over columns of five
+  const group = (key, jp, en, opts) => `<div class="sym" data-for="${key}"><b lang="ja" title="${en}">${jp}</b><div class="opts" data-pick="${key}" role="group" aria-label="${en}">${opts.map(([v, label, art]) => `<button type="button" data-v="${v}" aria-pressed="false" aria-label="${label}" title="${label}">${art}</button>`).join('')}</div></div>`;
+  const singles = (key) => Object.entries(NAMES[key]).map(([v, label]) => [v, label, icon(ICON[key][v])]);
+  $('#ws-symbols').innerHTML =
+    `<div class="tier top">${group('layout', '配置', 'Arrangement', singles('layout'))}${group('center', '芯', 'Centre', singles('center'))}${group('overlay', '重ね', 'Overlay', singles('overlay'))}${group('style', '色', 'Style', singles('style'))}</div>` +
+    `<div class="tier">${group('motif', '紋', 'Motif', Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => [k, MOTIFS[k].en, mini(motifSpec(k))]))}${group('enclosure', '輪', 'Enclosure', Object.keys(ENCLOSURES).map((k) => [k, encName(k), mini(encSpec(k))]))}</div>`;
+  // a number: its kanji, a brush stroke, and the value
+  const brush = (key, en) => `<div class="brush" role="slider" tabindex="0" aria-label="${en}" data-key="${key}"><svg viewBox="0 0 180 24" aria-hidden="true"><path class="track" filter="url(#dry)"/><path class="ink" filter="url(#ink)"/><circle class="drop" cy="12" r="2.6"/></svg></div>`;
+  const num = (key, jp, en, ctl) => `<div class="num" data-for="${key}"><b lang="ja" title="${en}">${jp}</b>${ctl}<output data-out="${key}"></output></div>`;
+  const stepper = (key, en, extra = '') => `<div class="stepper"><button type="button" data-step-key="${key}" data-dir="-1" aria-label="${en}: less">‹</button>${extra}<button type="button" data-step-key="${key}" data-dir="1" aria-label="${en}: more">›</button></div>`;
+  $('#ws-numbers').innerHTML = [
+    num('n', '数', 'How many', brush('n', 'How many')),
+    num('rows', '行', 'Rows', brush('rows', 'Rows')),
+    num('cols', '列', 'Columns', brush('cols', 'Columns')),
+    num('r', '間', 'Distance from centre', brush('r', 'Distance from centre')),
+    num('size', '大', 'Motif size', brush('size', 'Motif size')),
+    num('centerSize', '芯径', 'Centre size', brush('centerSize', 'Centre size')),
+    num('rot', '回', 'Turn', stepper('rot', 'Turn', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>')),
+    num('dy', '下', 'Shift down', stepper('dy', 'Shift down')),
+    num('aspect', '伸', 'Stretch', stepper('aspect', 'Stretch')),
+    num('lobes', '弁', 'Quince lobes', stepper('lobes', 'Quince lobes')),
     `<div class="actions"><button type="button" class="primary" id="ws-draw">Draw with compass</button><button type="button" id="ws-guides" aria-pressed="false">Guides</button><button type="button" id="ws-random">Surprise me</button><button type="button" id="ws-download">Download SVG</button></div>`,
   ].join('');
   const STEPS = { rot: [15, 0, 180], aspect: [0.05, 0.4, 1.6], dy: [0.02, -0.4, 0.4], lobes: [1, 4, 8] };
-  let guides = false;
+  const nearest = (vals, v) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
+  // a brush stroke: a blunt round start that tapers to a point with a small lift
+  const stroke = (len) => { const L = Math.max(len, 8); return `M5 7.5Q${f1(L * 0.45)} 5.5 ${f1(L)} 10.5Q${f1(L * 0.5)} 17.5 5 16.5A4.5 4.5 0 0 1 5 7.5Z`; };
+  const off = (k) => sliderOff[k] && sliderOff[k]();
+  const sliderOff = { r: () => spec.layout !== 'ring', centerSize: () => spec.layout !== 'ring' || spec.center === 'none' };
+
   root.addEventListener('click', (e) => {
     const pick = e.target.closest('[data-pick] button');
-    if (pick) return set({ ...spec, [pick.parentElement.dataset.pick === 'enclosure' ? 'enclosure' : pick.parentElement.dataset.pick]: pick.dataset.v });
+    if (pick) {
+      const k = pick.parentElement.dataset.pick, v = pick.dataset.v;
+      // overlay has no 'none' symbol: picking the current one again takes it off
+      return set({ ...spec, [k]: k === 'overlay' && spec.overlay === v ? 'none' : v });
+    }
     const st = e.target.closest('[data-step-key]');
     if (st) { const k = st.dataset.stepKey, [d, lo, hi] = STEPS[k]; return set({ ...spec, [k]: +Math.min(hi, Math.max(lo, spec[k] + d * +st.dataset.dir)).toFixed(2) }); }
   });
   root.addEventListener('keydown', (e) => {
     const sl = e.target.closest('[role="slider"]');
-    if (!sl || sl.getAttribute('aria-disabled') === 'true' || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    if (!sl || off(sl.dataset.key) || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
     const k = sl.dataset.key, vals = LADDERS[k], i = nearest(vals, spec[k]);
     const j = e.key === 'Home' ? 0 : e.key === 'End' ? vals.length - 1 : Math.min(vals.length - 1, Math.max(0, i + (['ArrowUp', 'ArrowRight'].includes(e.key) ? 1 : -1)));
     set({ ...spec, [k]: vals[j] });
   });
-  // drag along a ladder (or press anywhere on it) to set the value; the tick nearest the pointer wins
+  // drag along a stroke (or press anywhere on it): the ink follows the pointer
   let drag = null;
-  const tickAt = (sl, y) => [...sl.querySelectorAll('.tick')].reduce((a, t) => { const r = t.getBoundingClientRect(), d = Math.abs(r.top + r.height / 2 - y); return d < a.d ? { t, d } : a; }, { t: null, d: Infinity }).t;
-  const pull = (sl, y) => { const t = tickAt(sl, y); if (t && +t.dataset.v !== spec[sl.dataset.key]) set({ ...spec, [sl.dataset.key]: +t.dataset.v }); };
-  const hot = (sl, on) => leaders.querySelector(`[data-for="${sl.closest('.note').dataset.note}"]`)?.classList.toggle('hot', on);
+  const pull = (sl, x) => {
+    const r = sl.getBoundingClientRect(), vals = LADDERS[sl.dataset.key];
+    const j = Math.min(vals.length - 1, Math.max(0, Math.ceil(((x - r.left) / r.width) * vals.length) - 1));
+    if (vals[j] !== spec[sl.dataset.key]) set({ ...spec, [sl.dataset.key]: vals[j] });
+  };
   root.addEventListener('pointerdown', (e) => {
-    const sl = e.target.closest('[role="slider"]');
-    if (!sl || sl.getAttribute('aria-disabled') === 'true' || e.button > 0) return;
+    const sl = e.target.closest('.brush');
+    if (!sl || off(sl.dataset.key) || e.button > 0) return;
     e.preventDefault(); sl.focus({ preventScroll: true }); sl.setPointerCapture(e.pointerId);
-    drag = sl; sl.classList.add('dragging'); hot(sl, true); pull(sl, e.clientY);
+    drag = sl; sl.classList.add('dragging'); pull(sl, e.clientX);
   });
-  root.addEventListener('pointermove', (e) => { if (drag) pull(drag, e.clientY); });
-  const drop = () => { if (!drag) return; drag.classList.remove('dragging'); hot(drag, false); drag = null; };
+  root.addEventListener('pointermove', (e) => { if (drag) pull(drag, e.clientX); });
+  const drop = () => { if (drag) { drag.classList.remove('dragging'); drag = null; } };
   root.addEventListener('pointerup', drop);
   root.addEventListener('pointercancel', drop);
-  const nearest = (vals, v) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
-  sketch.querySelectorAll('.note').forEach((n) => {
-    n.addEventListener('mouseenter', () => leaders.querySelector(`[data-for="${n.dataset.note}"]`)?.classList.add('hot'));
-    n.addEventListener('mouseleave', () => leaders.querySelector(`[data-for="${n.dataset.note}"]`)?.classList.remove('hot'));
-  });
 
   function sync() {
     root.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', spec[p.dataset.pick] === b.dataset.v)));
-    root.querySelectorAll('[role="slider"]').forEach((sl) => {
-      const k = sl.dataset.key, vals = LADDERS[k], i = nearest(vals, spec[k]);
+    root.querySelectorAll('.brush').forEach((sl) => {
+      const k = sl.dataset.key, vals = LADDERS[k], i = nearest(vals, spec[k]), len = ((i + 1) / vals.length) * 180, o = off(k);
       sl.setAttribute('aria-valuenow', spec[k]); sl.setAttribute('aria-valuemin', vals[0]); sl.setAttribute('aria-valuemax', vals[vals.length - 1]);
-      sl.querySelectorAll('.tick').forEach((t, j) => { t.classList.toggle('cur', j === i); t.classList.toggle('filled', j < i); });
+      sl.setAttribute('aria-disabled', !!o); sl.tabIndex = o ? -1 : 0;
+      $('.track', sl).setAttribute('d', stroke(180));
+      $('.ink', sl).setAttribute('d', stroke(len - 4));
+      $('.drop', sl).setAttribute('cx', f1(Math.min(len + 1, 178)));
     });
-    root.querySelectorAll('[data-out]').forEach((o) => { const k = o.dataset.out; o.textContent = k === 'rot' ? `${spec.rot}°` : (+spec[k]).toFixed(k === 'lobes' ? 0 : 2); });
-    $('#dial').setAttribute('d', RING + spoke((spec.rot - 90) * Math.PI / 180, 0, 36, 8));
     const ring = spec.layout === 'ring', grid = spec.layout === 'grid';
-    const show = { n: ring, rows: grid, cols: grid, fixed: !ring && !grid, lobes: spec.enclosure === 'mokko', center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko'].includes(spec.motif) };
+    const show = { n: ring, rows: grid, cols: grid, center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko'].includes(spec.motif), lobes: spec.enclosure === 'mokko' };
     root.querySelectorAll('[data-for]').forEach((el) => { if (el.dataset.for in show) el.hidden = !show[el.dataset.for]; });
-    $('[data-for="fixed"]').textContent = `${spec.layout === 'mitsumori' ? 3 : spec.motif === 'none' ? 0 : 1} . set by arrangement`;
-    // distance and centre size only mean something on a ring (and a ring with a centre): otherwise they rest, greyed
-    const off = { r: !ring, centerSize: !ring || spec.center === 'none' };
-    Object.entries(off).forEach(([k, o]) => { const sl = $(`[role="slider"][data-key="${k}"]`); sl.setAttribute('aria-disabled', o); sl.tabIndex = o ? -1 : 0; });
-    $('#o-motif').textContent = MOTIFS[spec.motif]?.en || 'None';
-    $('#o-enc').textContent = encName(spec.enclosure);
-    $('#o-count').textContent = ring ? spec.n : grid ? `${spec.rows} × ${spec.cols}` : '';
-    $('#o-r').textContent = off.r ? 'Ring only' : (+spec.r).toFixed(2);
-    $('#o-size').textContent = (+spec.size).toFixed(2);
-    $('#o-cs').textContent = !ring ? 'Ring only' : spec.center === 'none' ? 'Pick a centre' : (+spec.centerSize).toFixed(2);
+    root.querySelectorAll('[data-out]').forEach((o) => {
+      const k = o.dataset.out;
+      o.textContent = off(k) ? (k === 'r' || spec.layout !== 'ring' ? 'Ring only' : 'Pick a centre') : k === 'rot' ? `${spec.rot}°` : ['n', 'rows', 'cols', 'lobes'].includes(k) ? String(spec[k]) : (+spec[k]).toFixed(2);
+    });
+    $('#dial').setAttribute('d', RING + spoke((spec.rot - 90) * Math.PI / 180, 0, 36, 8));
     $('#ws-guides').setAttribute('aria-pressed', guides);
-  }
-
-  // pointing lines: from each note's label, across and then down or up, to the part it changes
-  function drawLeaders() {
-    if (getComputedStyle(leaders).display === 'none') return;
-    const box = sketch.getBoundingClientRect(), ctm = svg.getScreenCTM();
-    if (!ctm || !box.width) return;
-    const b = build(spec);
-    const units = b.guides.filter((g) => g.step === 'motif' && g.c).map((g) => ({ x: g.c[0], y: g.c[1], s: g.c[2] }));
-    const ctr = b.guides.find((g) => g.step === 'layout' && g.c)?.c || [0, spec.dy * 400];
-    const best = (score, fx, fy) => (units.length ? units.reduce((a, u) => (score(u) > score(a) ? u : a)) : { x: fx, y: fy, s: 60 });
-    const tl = best((u) => -u.x - u.y, -150, -150), tr = best((u) => u.x - u.y, 150, -150), br = best((u) => u.x + u.y, 150, 150);
-    // targets on each side run top to bottom in the same order as their notes, so no two lines cross
-    const R = spec.enclosure === 'none' ? 300 : 436, ey = (tl.y + ctr[1]) / 2;
-    const T = {
-      motif: [tl.x, tl.y],
-      enc: [-Math.sqrt(Math.max(0, R * R - ey * ey)), ey],
-      cs: [ctr[0], ctr[1]],
-      count: [tr.x, tr.y],
-      r: units.length ? [(ctr[0] + br.x) / 2, (ctr[1] + br.y) / 2] : [br.x, 0],
-      size: [br.x + br.s * 0.6, br.y + br.s * 0.6],
-    };
-    const to = (x, y) => { const p = new DOMPoint(x, y).matrixTransform(ctm); return [p.x - box.left, p.y - box.top]; };
-    // each line leaves its label, drops down its own lane beside the notes, then runs in to its point;
-    // upper notes take the lanes nearer the crest
-    leaders.innerHTML = [...sketch.querySelectorAll('.note')].map((n) => {
-      const lab = n.querySelector('.note-label').getBoundingClientRect(), left = n.classList.contains('l');
-      const k = n.classList.contains('n1') ? 2 : n.classList.contains('n2') ? 1 : 0;
-      const ax = (left ? lab.right + 16 : lab.left - 16) - box.left, ay = lab.top + lab.height / 2 - box.top;
-      const lane = ax + (left ? 1 : -1) * (16 + k * 16);
-      const [tx, ty] = to(...T[n.dataset.note]);
-      return `<g data-for="${n.dataset.note}"><path d="M${f1(ax)} ${f1(ay)}H${f1(lane)}V${f1(ty)}H${f1(tx)}"/><circle cx="${f1(tx)}" cy="${f1(ty)}" r="2.5"/></g>`;
-    }).join('');
   }
 
   function set(s) {
@@ -527,9 +505,8 @@ const ws = (() => {
     const b = build(spec);
     svg.innerHTML = crestMarkup(b, { guides });
     svg.setAttribute('aria-label', b.name.en);
-    $('#ws-title').innerHTML = `<span lang="ja">${b.name.jp}</span><span class="ften">${b.name.ro} . ${b.name.en}</span>`;
+    $('#ws-name').innerHTML = `<span lang="ja">${b.name.jp}</span><span>${b.name.ro} . ${b.name.en}</span>`;
     sync();
-    requestAnimationFrame(drawLeaders);
   }
   async function draw() {
     svg.innerHTML = crestMarkup(build(spec), { guides: true });
@@ -544,8 +521,6 @@ const ws = (() => {
     a.download = `kamon-${build(spec).name.ro.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.svg`;
     a.click();
   };
-  new ResizeObserver(() => drawLeaders()).observe(sketch);
-  document.fonts?.ready.then(drawLeaders);
   return { set, draw, get: () => spec, svg };
 })();
 
