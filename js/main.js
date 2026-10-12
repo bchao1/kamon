@@ -16,13 +16,19 @@ function symmetryOf(c) {
   const axes = [], top = Math.max(...c.mir);
   c.mir.forEach((v, i) => { const p = c.mir[(i + c.mir.length - 1) % c.mir.length], q = c.mir[(i + 1) % c.mir.length]; if (v >= 0.8 && v >= top - 0.1 && v >= p && v > q) axes.push(i * 2); });
   if (med > 0.95) return { n: Infinity, axes: [], key: 'inf' };
+  // n-fold if every multiple of 360/n overlaps well; the relative test catches near-round crests (the chrysanthemum)
   let n = 1;
-  for (let k = 2; k <= 12; k++) { let m = 1; for (let j = 1; j < k; j++) m = Math.min(m, at(c.rot, 2, (j * 360) / k)); if (m >= 0.83 && m - med >= 0.1) n = k; }
+  for (let k = 2; k <= 24; k++) { let m = 1; for (let j = 1; j < k; j++) m = Math.min(m, at(c.rot, 2, (j * 360) / k)); if (m >= 0.83 && (m - med >= 0.1 || (m - med) / (1 - med) >= 0.45)) n = k; }
   // n-fold rotation plus one mirror means n mirrors (dihedral group): fill in any the threshold missed
   if (n > 1 && axes.length) { const base = axes.reduce((b, a) => (Math.abs(a - 90) < Math.abs(b - 90) ? a : b)); axes.length = 0; for (let k = 0; k < n; k++) axes.push((base + (k * 180) / n) % 180); }
   return { n, axes, key: n > 1 ? `r${n}` : axes.length ? 'mirror' : 'none' };
 }
-for (const c of CLANS) Object.assign(c, { data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
+for (const c of CLANS) Object.assign(c, { kind: c.kind || 'buke', data: DATA[c.key], sym: symmetryOf(DATA[c.key]), credit: CREDITS[c.key] });
+for (const c of CLANS) if (c.fold) { const { axes } = c.sym, base = axes[0] ?? 90; c.sym = { n: c.fold, axes: Array.from({ length: c.fold }, (_, k) => (base + (k * 180) / c.fold) % 180), key: `r${c.fold}` }; }
+// the count in kanji, for the title of the crest book: 53 → 五十三
+const KANJI = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+const kanjiNum = (n) => (n >= 100 ? String(n) : (n >= 20 ? KANJI[Math.floor(n / 10)] : '') + (n >= 10 ? '十' : '') + KANJI[n % 10]);
+const ALL_JP = `${kanjiNum(CLANS.length)}の紋`;
 
 const symText = (s) => (s.n === Infinity ? t('symInf') : s.n > 1 ? t('symRot', s.n, s.axes.length) : s.axes.length ? t('symOneMirror') : t('symNone'));
 const LANG_TAG = { en: 'en', ja: 'ja', zh: 'zh-Hant' };
@@ -126,8 +132,10 @@ function hero() {
 // ================= TWENTY HOUSES =================
 const board = $('#board');
 let mode = 'grid', active = 'oda';
-const MODE_JP = { grid: '二十の家', symmetry: '対称', motif: '紋様', side: '関ヶ原' };
-const SYM_KEYS = ['none', 'mirror', 'r2', 'r3', 'r4', 'r5', 'r6', 'r8', 'inf'];
+const MODE_JP = { grid: ALL_JP, kind: '使い手', symmetry: '対称', motif: '紋様', side: '関ヶ原' };
+// symmetry groups that actually occur, in order: none, mirror, 2-fold … n-fold, circle
+const SYM_KEYS = ['none', 'mirror', ...[...new Set(CLANS.filter((c) => c.sym.n > 1 && c.sym.n !== Infinity).map((c) => c.sym.n))].sort((a, b) => a - b).map((n) => `r${n}`), 'inf'];
+const symCol = (k) => t('symCols')[k] || [t('symFold', +k.slice(1)), `${Math.round(360 / +k.slice(1))}°`];
 function initBoard() {
   CLANS.forEach((c, i) => {
     const b = document.createElement('button');
@@ -156,47 +164,99 @@ function relabelTiles() {
   }
 }
 function layout() {
-  $('#g-jp').textContent = MODE_JP[mode]; $('#g-en').textContent = t('gTitle')[mode];
+  $('#g-jp').textContent = MODE_JP[mode]; $('#g-en').textContent = mode === 'grid' ? t('gAll', CLANS.length) : t('gTitle')[mode];
   const fn = $('#g-note'); fn.textContent = mode === 'side' ? t('sekigahara') : t('clickHint'); fn.classList.toggle('story-mode', mode === 'side');
-  board.classList.toggle('quiet', mode === 'symmetry' || mode === 'motif');
+  board.classList.toggle('quiet', mode !== 'grid' && mode !== 'side');
   board.querySelectorAll('.row-label').forEach((l) => l.remove());
-  const W = board.clientWidth, H = board.clientHeight > 240 ? board.clientHeight : 640, lblH = 26;
+  // the board keeps its CSS height (600px, or 70vh on phones) and grows when an arrangement needs more
+  board.classList.remove('wrap');
+  const frame = board.parentElement; frame.style.minHeight = '';
+  const W = board.clientWidth, H = board.clientHeight > 240 ? board.clientHeight : 640;
+  let need = H;
   const tile = (c) => board.querySelector(`.tile[data-key="${c.key}"]`);
   const place = (c, x, y, ts, gone = false) => { const el = tile(c); el.style.setProperty('--t', `${ts}px`); el.style.transform = `translate(${x}px, ${y}px)`; el.classList.toggle('gone', gone); el.tabIndex = gone ? -1 : 0; };
   const label = (html, x, y, w) => { const l = document.createElement('div'); l.className = 'row-label'; l.innerHTML = html; l.style.width = `${w}px`; l.style.transform = `translate(${x}px, ${y}px)`; board.append(l); };
-  if (mode === 'grid') {
-    // five across, read from the right, like a page of a crest book
-    const cols = W > 560 ? 5 : W > 400 ? 4 : 3, rows = Math.ceil(CLANS.length / cols), cell = W / cols, gap = 24;
-    const ts = Math.max(48, Math.min(cell - 24, (H - rows * (lblH + gap) + gap) / rows, 104));
-    const total = rows * (ts + lblH + gap) - gap, y0 = Math.max(0, (H - total) / 2);
-    CLANS.forEach((c, i) => place(c, W - ((i % cols) + 1) * cell + (cell - ts) / 2, y0 + Math.floor(i / cols) * (ts + lblH + gap), ts));
-  } else if (mode === 'symmetry' || mode === 'motif') {
-    // one column per group, right to left, like lines of vertical text
-    const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : c.motif);
-    const groups = (mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...t('symCols')[k]]) : Object.entries(t('motifGroups')).map(([k, v]) => [k, v, ''])).map(([k, name, sub]) => [name, sub, CLANS.filter((c) => keyOf(c) === k)]).filter((g) => g[2].length);
-    const colW = W / groups.length, maxN = Math.max(...groups.map((g) => g[2].length)), labH = 48, vg = 8;
-    const ts = Math.max(28, Math.min(colW - 16, (H - labH) / maxN - vg, 88));
-    const total = labH + maxN * (ts + vg) - vg, y0 = Math.max(0, (H - total) / 2);
-    groups.forEach(([name, sub, members], gi) => {
-      const x0 = W - (gi + 1) * colW;
-      label(`<b>${name}</b><span>${sub || t('houses', members.length)}</span>`, x0, y0, colW);
-      members.forEach((c, i) => place(c, x0 + (colW - ts) / 2, y0 + labH + i * (ts + vg), ts));
+  const keyOf = (c) => (mode === 'symmetry' ? c.sym.key : mode === 'motif' ? c.motif : c.kind);
+  const columnGroups = () => {
+    const named = mode === 'symmetry' ? SYM_KEYS.map((k) => [k, ...symCol(k)]) : Object.entries(t(mode === 'motif' ? 'motifGroups' : 'kinds')).map(([k, v]) => [k, ...(Array.isArray(v) ? v : [v, ''])]);
+    return named.map(([k, name, sub]) => [name, sub, CLANS.filter((c) => keyOf(c) === k)]).filter((g) => g[2].length);
+  };
+  const by = (k) => CLANS.filter((c) => c.side === k);
+  const SIDE_MID = [['split', '両方'], ['switched', '寝返り'], ['neutral', '動かず']];
+  // columns need room for every group side by side; otherwise (phones, and tablets for symmetry) stack them
+  if (mode !== 'grid' && (W < 560 || (mode !== 'side' && columnGroups().length * 72 > W))) {
+    // phones: each group is a label over a wrapped row of crests, stacked top to bottom
+    const side = t('sideShort'), named = mode === 'side'
+      ? [['西軍', side.west, by('west')], ['東軍', side.east, by('east')], ...SIDE_MID.map(([k, jp]) => [jp, side[k], by(k)])].filter((g) => g[2].length).map(([jp, sub, m]) => [`<b lang="ja">${jp}</b><span>${sub}</span>`, m])
+      : columnGroups().map(([name, sub, m]) => [`<b>${name}</b><span>${sub || t('houses', m.length)}</span>`, m]);
+    // Sekigahara keeps its names under each crest, wrapped to two lines across the cell
+    const ts = 48, gap = mode === 'side' ? 24 : 12, rowH = ts + (mode === 'side' ? 36 + gap : gap), labH = 52, per = Math.max(1, Math.floor((W + gap) / (ts + gap)));
+    board.classList.toggle('wrap', mode === 'side'); board.style.setProperty('--cell', `${ts + gap - 4}px`);
+    let y = 0;
+    named.forEach(([html, members]) => {
+      label(html, 0, y, W); y += labH;
+      const n = Math.min(per, members.length), x0 = (W - n * ts - (n - 1) * gap) / 2;
+      members.forEach((c, i) => place(c, x0 + (i % per) * (ts + gap), y + Math.floor(i / per) * rowH, ts));
+      y += Math.ceil(members.length / per) * rowH + gap;
     });
+    for (const c of CLANS) if (mode === 'side' && (c.side === 'fallen' || c.side === 'none')) place(c, W / 2 - ts / 2, 0, ts, true);
+    need = y;
+  } else if (mode === 'grid') {
+    // a page of a crest book, read from the right; names wrap to two lines under each crest
+    const cols = Math.max(3, Math.min(10, Math.floor(W / (W < 500 ? 76 : 88)))), rows = Math.ceil(CLANS.length / cols), cell = W / cols, gap = 24, lblH = 36;
+    const ts = Math.max(40, Math.min(cell - 24, 104));
+    const total = rows * (ts + lblH + gap) - gap, y0 = Math.max(0, (H - total) / 2);
+    board.classList.add('wrap'); board.style.setProperty('--cell', `${cell - 8}px`);
+    CLANS.forEach((c, i) => place(c, W - ((i % cols) + 1) * cell + (cell - ts) / 2, y0 + Math.floor(i / cols) * (ts + lblH + gap), ts));
+    need = total;
+  } else if (mode !== 'side') {
+    // one group per column, right to left, like lines of vertical text; a big group wraps into more columns.
+    // Pick the largest tile that fits every group across the board.
+    const groups = columnGroups(), labH = 48, vg = 8, pad = 16, minW = 64, ggap = 8;
+    const tryFit = (ts, rows) => {
+      const widths = groups.map((g) => Math.max(minW, Math.ceil(g[2].length / rows) * (ts + pad)));
+      return widths.reduce((a, b) => a + b, 0) + ggap * (groups.length - 1) <= W ? { ts, rows, widths } : null;
+    };
+    let fit = null;
+    for (let ts = 88; ts >= 28 && !fit; ts -= 2) fit = tryFit(ts, Math.max(1, Math.floor((H - labH + vg) / (ts + vg))));
+    // too narrow even at the smallest size: keep small tiles and let the columns run longer
+    for (let rows = 1; !fit; rows++) fit = tryFit(28, rows) || (rows >= CLANS.length ? { ts: 28, rows, widths: groups.map(() => W / groups.length) } : null);
+    const { ts, rows, widths } = fit, used = widths.reduce((a, b) => a + b, 0) + ggap * (groups.length - 1);
+    const maxN = Math.min(rows, Math.max(...groups.map((g) => g[2].length)));
+    const total = labH + maxN * (ts + vg) - vg, y0 = Math.max(0, (H - total) / 2);
+    let x = W - Math.max(0, (W - used) / 2);
+    groups.forEach(([name, sub, members], gi) => {
+      const w = widths[gi], x0 = x - w, cols = Math.ceil(members.length / rows), colW = w / cols;
+      label(`<b>${name}</b><span>${sub || t('houses', members.length)}</span>`, x0, y0, w);
+      // fill each column top to bottom, columns right to left
+      members.forEach((c, i) => place(c, x - (Math.floor(i / rows) + 1) * colW + (colW - ts) / 2, y0 + labH + (i % rows) * (ts + vg), ts));
+      x = x0 - ggap;
+    });
+    need = total;
   } else {
-    // Sekigahara: the West on the left, the East on the right, the Sanada on the line between them
-    const by = (k) => CLANS.filter((c) => c.side === k);
-    const labH = 56, S = Math.min(W / 7, (H - labH) / 4, 132), ts = Math.min(S - lblH - 8, S * 0.62), CX = W / 2;
-    const total = labH + 4 * S, y0 = Math.max(0, (H - total) / 2), top = y0 + labH;
+    // Sekigahara: the West on the left, the East on the right, three columns each; on the line between them
+    // the houses that split, switched or stayed out. Houses gone by 1600, and those that aren't warrior houses, step away.
+    const lblH = 26;
+    const rows = Math.max(Math.ceil(by('west').length / 3), Math.ceil(by('east').length / 3));
+    const labH = 56, S = Math.min(W / 7.8, 132), ts = Math.min(S - lblH - 8, S * 0.62), CX = W / 2;
+    const total = labH + rows * S, y0 = Math.max(0, (H - total) / 2), top = y0 + labH;
     const at = (cx, row) => [cx - ts / 2, top + row * S];
-    by('west').forEach((c, i) => place(c, ...at(CX - (3 - (i % 2)) * S, Math.floor(i / 2)), ts));
-    by('east').forEach((c, i) => place(c, ...at(CX + (2 + (i % 2)) * S, Math.floor(i / 2)), ts));
-    by('split').forEach((c) => place(c, ...at(CX, 1.5), ts));
-    by('fallen').forEach((c) => place(c, CX - ts / 2, top + 1.5 * S, ts, true));
+    by('west').forEach((c, i) => place(c, ...at(CX - (3.5 - (i % 3)) * S, Math.floor(i / 3)), ts));
+    by('east').forEach((c, i) => place(c, ...at(CX + (1.5 + (i % 3)) * S, Math.floor(i / 3)), ts));
     const side = t('sideShort');
-    label(`<b lang="ja">西軍</b><span>${side.west}</span>`, CX - 2.5 * S - 60, y0, 120);
-    label(`<b lang="ja">東軍</b><span>${side.east}</span>`, CX + 2.5 * S - 60, y0, 120);
-    label(`<b lang="ja">両方</b><span>${side.split}</span>`, CX - 60, top + 1.5 * S - labH, 120);
+    label(`<b lang="ja">西軍</b><span>${side.west}</span>`, CX - 2.5 * S - 80, y0, 160);
+    label(`<b lang="ja">東軍</b><span>${side.east}</span>`, CX + 2.5 * S - 80, y0, 160);
+    const middle = SIDE_MID.filter(([k]) => by(k).length);
+    const step = Math.max(S + labH - 8, (rows * S) / middle.length);
+    middle.forEach(([k, jp], mi) => {
+      const y = top + mi * step;
+      label(`<b lang="ja">${jp}</b><span>${side[k]}</span>`, CX - 60, y - labH + 8, 120);
+      by(k).forEach((c, i) => place(c, CX - ts / 2 + i * (ts + 8), y, ts));
+    });
+    for (const c of CLANS) if (c.side === 'fallen' || c.side === 'none') place(c, CX - ts / 2, top + (rows * S) / 2, ts, true);
+    need = total;
   }
+  if (need > H) frame.style.minHeight = `${Math.ceil(need)}px`;
 }
 
 // ================= TAKEN APART =================
@@ -263,8 +323,9 @@ function renderInfo() {
   // clanText gives the house in Traditional Chinese characters when reading in Chinese
   $('#a-name').innerHTML = `${c.houseEn}<span lang="${lang === 'zh' ? 'zh-Hant' : 'ja'}">${c.house}</span>`;
   $('#a-name').setAttribute('aria-label', t('replay', houseName(c)));
-  $('#a-meta').textContent = `${c.province} . ${c.side === 'fallen' ? t('gone', c.fell) : t('sides')[c.side]}`;
-  $('#a-facts').innerHTML = `<dl><dt>${t('lord')}</dt><dd>${c.lord}</dd><dt>${t('crestL')}</dt><dd>${c.gloss}</dd><dt>${t('inkL')}</dt><dd>${t('inkLine', d.components, symText(c.sym), Math.round(d.ink * 100))}</dd></dl>`;
+  // warrior houses give their side in 1600; clans, the court and temples say what they are
+  $('#a-meta').textContent = `${c.province} . ${c.kind !== 'buke' ? t('kinds')[c.kind][0] : c.side === 'fallen' ? t('gone', c.fell) : t('sides')[c.side]}`;
+  $('#a-facts').innerHTML = `<dl><dt>${t('lordBy')[c.kind]}</dt><dd>${c.lord}</dd><dt>${t('crestL')}</dt><dd>${c.gloss}</dd><dt>${t('inkL')}</dt><dd>${t('inkLine', d.components, symText(c.sym), Math.round(d.ink * 100))}</dd></dl>`;
   $('#a-source').innerHTML = t('sourceLine', c.credit);
   $('#a-title').textContent = c.mon;
   $('#a-en').textContent = `${c.read} . ${houseName(c)}`;
@@ -599,7 +660,8 @@ function again() {
 // ---------- language ----------
 function applyStatic() {
   document.title = t('title');
-  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n)));
+  document.querySelectorAll('[data-i18n]').forEach((el) => (el.innerHTML = t(el.dataset.i18n, CLANS.length)));
+  document.querySelectorAll('[data-all-jp]').forEach((el) => (el.textContent = ALL_JP));
   document.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
   const sw = $('#lang-switch');
   sw.setAttribute('aria-label', t('langLabel'));

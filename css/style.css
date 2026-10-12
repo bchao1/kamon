@@ -120,6 +120,9 @@ html.sheet-open { overflow: hidden; }
 .tile:hover .crest, .tile:focus-visible .crest { transform: scale(1.06); }
 .tile .lbl { display: block; margin-top: var(--s2); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transition: opacity .4s; }
 .tile .lbl i { font-style: normal; color: var(--mute); margin-right: 6px; }
+/* in the full grid (and Sekigahara on phones), names wrap to two lines across their cell (Jōdo Shinshū Hongwanji) */
+.board.wrap .tile .lbl { width: var(--cell); margin-left: calc((var(--t) - var(--cell)) / 2); white-space: normal; line-height: 1.4; }
+.board.wrap .tile .lbl i { display: block; margin-right: 0; }
 .tile.active .lbl { color: var(--kihada); }
 .board.quiet .tile .lbl { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); opacity: 0; pointer-events: none; z-index: 2; }
 .board.quiet .tile:hover .lbl, .board.quiet .tile:focus-visible .lbl { opacity: 1; }
@@ -151,8 +154,9 @@ html.sheet-open { overflow: hidden; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s1) var(--s3); margin-top: var(--s2); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
 .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
 .text-btn { color: var(--kihada); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-.strip { display: grid; grid-template-columns: repeat(10, 24px); gap: var(--s3); justify-content: center; }
-.strip button { width: 24px; height: 24px; opacity: .35; transition: opacity .3s, transform .5s var(--spring); }
+/* every crest, three rows of eighteen; fewer across on narrow screens */
+.strip { display: grid; grid-template-columns: repeat(18, 20px); gap: 10px; justify-content: center; }
+.strip button { width: 20px; height: 20px; opacity: .35; transition: opacity .3s, transform .5s var(--spring); }
 .strip button:hover { opacity: .8; transform: translateY(-2px); }
 .strip button[aria-current='true'] { opacity: 1; }
 .strip button[aria-current='true'] path { fill: var(--kihada); }
@@ -260,6 +264,7 @@ html.sheet-open { overflow: hidden; }
   .weave .row .cell:nth-child(n + 17) { display: none; }
 }
 @media (max-width: 640px) {
+  .strip { grid-template-columns: repeat(9, 20px); }
   .weave .row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .weave .row .cell:nth-child(n + 9) { display: none; }
 }

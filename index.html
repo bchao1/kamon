@@ -22,7 +22,7 @@
         <p class="lede" data-i18n="lede">The kamon are the family crests of Japan’s warring houses, laid out by painters with a compass and a ruler. This experiment traces twenty of them back to that geometry, then turns the rules into a grammar you can draw with.</p>
       </div>
       <nav class="hero-nav" data-i18n-aria="startNav" aria-label="Start">
-        <a href="#gallery"><span lang="ja">二十の家</span><small data-i18n="navGallery">Twenty houses</small></a>
+        <a href="#gallery"><span lang="ja" data-all-jp>五十三の紋</span><small data-i18n="navGallery">53 crests</small></a>
         <a href="#workshop"><span lang="ja">作る</span><small data-i18n="navWorkshop">Draw a crest</small></a>
       </nav>
       <figure class="hero-crest" aria-hidden="true">
@@ -37,9 +37,10 @@
   <main>
     <!-- Twenty houses: title top centre, menu split left and right, board in columns 3–10 -->
     <section class="frame" id="gallery" aria-labelledby="g-title">
-      <h2 class="ftitle" id="g-title" data-reveal><span lang="ja" id="g-jp">二十の家</span><span class="ften" id="g-en">Twenty houses . 1560–1600</span></h2>
+      <h2 class="ftitle" id="g-title" data-reveal><span lang="ja" id="g-jp"></span><span class="ften" id="g-en"></span></h2>
       <nav class="vmenu g-left" data-i18n-aria="arrange" aria-label="Arrange the houses" data-reveal>
-        <button data-mode="grid" aria-pressed="true"><span lang="ja">家ごと</span><small data-i18n="byHouse">By house</small></button>
+        <button data-mode="grid" aria-pressed="true"><span lang="ja">一覧</span><small data-i18n="byHouse">All</small></button>
+        <button data-mode="kind" aria-pressed="false"><span lang="ja">使い手</span><small data-i18n="byUser">Who wears it</small></button>
         <button data-mode="symmetry" aria-pressed="false"><span lang="ja">対称</span><small data-i18n="bySym">Symmetry</small></button>
       </nav>
       <div class="g-board"><div id="board" class="board"></div></div>
@@ -75,7 +76,7 @@
   <div class="scrim" id="scrim"></div>
   <!-- Taken apart: a sheet that slides in from the right over the twenty houses; house in columns 1–3, crest in 4–9, crest name in 10–12 -->
   <section class="frame deep sheet" id="anatomy" role="dialog" aria-modal="true" aria-labelledby="a-title" inert>
-    <button class="sheet-back" id="a-close"><span aria-hidden="true">←</span><span lang="ja">二十の家</span><span data-i18n="back">Back to the twenty houses</span></button>
+    <button class="sheet-back" id="a-close"><span aria-hidden="true">←</span><span lang="ja" data-all-jp>五十三の紋</span><span data-i18n="back">Back to the crests</span></button>
     <div class="a-left">
       <div class="a-info" data-reveal>
         <button class="a-name" id="a-name"></button>
