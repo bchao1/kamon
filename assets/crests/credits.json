@@ -427,5 +427,88 @@
   "licenseUrl": "",
   "artist": "도성전 and Shyamal",
   "uploader": "Vichycombo"
+ },
+ "jodo": {
+  "file": "Japanese Crest Tsukikage Gyouyou (No background and Black color drawing).svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_Crest_Tsukikage_Gyouyou_(No_background_and_Black_color_drawing).svg",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "artist": "Kohfuku",
+  "uploader": "Kohfuku"
+ },
+ "otani": {
+  "file": "近衛牡丹紋.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:%E8%BF%91%E8%A1%9B%E7%89%A1%E4%B8%B9%E7%B4%8B.svg",
+  "license": "CC0",
+  "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+  "artist": "User:白拍子花子",
+  "uploader": "Wrg6jcstbwtcu"
+ },
+ "shoshu": {
+  "file": "Japanese crest Tsuru no Maru.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_crest_Tsuru_no_Maru.svg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "Original by User:Mukai, modified by Eiríkr Útlendi",
+  "uploader": "Eirikr"
+ },
+ "jishu": {
+  "file": "Kounoke kamon.png",
+  "page": "https://commons.wikimedia.org/wiki/File:Kounoke_kamon.png",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "Shimomurake",
+  "uploader": "Forewems",
+  "ext": ".png"
+ },
+ "hosso": {
+  "file": "Japanese crest Sagari Fuji.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_crest_Sagari_Fuji.svg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "Mukai",
+  "uploader": "Jdx"
+ },
+ "obaku": {
+  "file": "Japanese Crest Maru ni mitu ura Aoi.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_Crest_Maru_ni_mitu_ura_Aoi.svg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "Mukai",
+  "uploader": "Mukai"
+ },
+ "ritsu": {
+  "file": "奈良・唐招提寺 寺紋.png",
+  "page": "https://commons.wikimedia.org/wiki/File:%E5%A5%88%E8%89%AF%E3%83%BB%E5%94%90%E6%8B%9B%E6%8F%90%E5%AF%BA_%E5%AF%BA%E7%B4%8B.png",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "MLFU5BrYMJ2",
+  "uploader": "MLFU5BrYMJ2",
+  "ext": ".png"
+ },
+ "yuzu": {
+  "file": "大阪・大念仏寺の寺紋。.png",
+  "page": "https://commons.wikimedia.org/wiki/File:%E5%A4%A7%E9%98%AA%E3%83%BB%E5%A4%A7%E5%BF%B5%E4%BB%8F%E5%AF%BA%E3%81%AE%E5%AF%BA%E7%B4%8B%E3%80%82.png",
+  "license": "CC BY-SA 4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+  "artist": "MLFU5BrYMJ2",
+  "uploader": "MLFU5BrYMJ2",
+  "ext": ".png"
+ },
+ "rinzai": {
+  "file": "Japanese Crest Houjou Uroko.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_Crest_Houjou_Uroko.svg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "Mukai",
+  "uploader": "Mukai"
+ },
+ "tendai": {
+  "file": "Japanese Crest Jyuuroku Kiku.svg",
+  "page": "https://commons.wikimedia.org/wiki/File:Japanese_Crest_Jyuuroku_Kiku.svg",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+  "artist": "Mukai; three-star centre added for this site",
+  "uploader": ""
  }
 }
