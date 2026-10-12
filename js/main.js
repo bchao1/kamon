@@ -5,7 +5,8 @@ import { crestMarkup, animateConstruction, crestFile, reduced } from './render.j
 
 const $ = (s, el = document) => el.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
-const [DATA, CREDITS] = await Promise.all([fetch('data/crests.json').then((r) => r.json()), fetch('assets/crests/credits.json').then((r) => r.json())]);
+const V = document.getElementById('kamon-version')?.dataset.v || ''; // see tools/stamp.mjs
+const [DATA, CREDITS] = await Promise.all([fetch(`data/crests.json?v=${V}`).then((r) => r.json()), fetch(`assets/crests/credits.json?v=${V}`).then((r) => r.json())]);
 const BY_KEY = Object.fromEntries(CLANS.map((c) => [c.key, c]));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -468,7 +469,7 @@ const ICON = {
 };
 const icon = (d) => `<svg viewBox="-50 -50 100 100" aria-hidden="true"><path d="${d}" fill-rule="evenodd"/></svg>`;
 const range = (a, b, s) => Array.from({ length: Math.round((b - a) / s) + 1 }, (_, i) => +(a + i * s).toFixed(2));
-const LADDERS = { n: range(1, 12, 1), rows: range(1, 4, 1), cols: range(1, 4, 1), r: range(0.05, 0.9, 0.05), size: range(0.1, 1, 0.05), centerSize: [0.03, 0.05, 0.07, 0.1, 0.13, 0.16, 0.2, 0.25, 0.3, 0.35, 0.42, 0.5] };
+const LADDERS = { n: range(1, 12, 1), rows: range(1, 4, 1), cols: range(1, 4, 1), r: range(0.05, 0.9, 0.05), size: range(0.1, 1, 0.05), centerSize: [0.03, 0.05, 0.07, 0.1, 0.13, 0.16, 0.2, 0.25, 0.3, 0.35, 0.42, 0.5], tail: range(0.4, 1.8, 0.1), reach: range(0, 1.1, 0.05) };
 const ws = (() => {
   let spec = { ...DEFAULT }, guides = false;
   const root = $('#workshop'), svg = $('#ws-svg');
@@ -480,6 +481,7 @@ const ws = (() => {
   // a group of symbols: its kanji (its name on hover) over columns of five
   const group = (key, jp, en, opts) => `<div class="sym" data-for="${key}"><b lang="ja" title="${en}">${jp}</b><div class="opts" data-pick="${key}" role="group" aria-label="${en}">${opts.map(([v, label, art]) => `<button type="button" data-v="${v}" aria-pressed="false" aria-label="${label}" title="${label}">${art}</button>`).join('')}</div></div>`;
   const singles = (key) => Object.entries(names(key)).map(([v, label]) => [v, label, icon(ICON[key][v])]);
+  const tomoeSpec = (flip) => ({ enclosure: 'none', layout: 'single', motif: 'tomoe', size: 0.9, tail: 1, flip });
   // a number: its kanji, a brush stroke, and the value
   const brush = (key, en) => `<div class="brush" role="slider" tabindex="0" aria-label="${en}" data-key="${key}"><svg viewBox="0 0 180 24" aria-hidden="true"><path class="track" filter="url(#dry)"/><path class="ink" filter="url(#ink)"/><circle class="drop" cy="12" r="2.6"/></svg></div>`;
   const num = (key, jp, en, ctl) => `<div class="num" data-for="${key}"><b lang="ja" title="${en}">${jp}</b>${ctl}<output data-out="${key}"></output></div>`;
@@ -488,11 +490,13 @@ const ws = (() => {
   const stepNum = (key, jp, label, extra) => num(key, jp, t(label), stepper(key, t(label), extra));
   function renderControls() {
     $('#ws-symbols').innerHTML =
-      `<div class="tier top">${group('layout', '配置', t('cLayout'), singles('layout'))}${group('center', '芯', t('cCenter'), singles('center'))}${group('overlay', '重ね', t('cOverlay'), singles('overlay'))}${group('style', '色', t('cStyle'), singles('style'))}</div>` +
+      `<div class="tier top">${group('layout', '配置', t('cLayout'), singles('layout'))}${group('center', '芯', t('cCenter'), singles('center'))}${group('overlay', '重ね', t('cOverlay'), singles('overlay'))}${group('style', '色', t('cStyle'), singles('style'))}${group('flip', '向', t('cFlip'), [['false', t('migi'), mini(tomoeSpec(false))], ['true', t('hidari'), mini(tomoeSpec(true))]])}</div>` +
       `<div class="tier">${group('motif', '紋', t('cMotif'), Object.keys(MOTIFS).filter((k) => k !== 'none').map((k) => [k, t('motifs')[k], mini(motifSpec(k))]))}${group('enclosure', '輪', t('cEnc'), Object.keys(ENCLOSURES).map((k) => [k, t('encs')[k], mini(encSpec(k))]))}</div>`;
     $('#ws-numbers').innerHTML = [
       slide('n', '数', 'cN'), slide('rows', '行', 'cRows'), slide('cols', '列', 'cCols'), slide('r', '間', 'cR'), slide('size', '大', 'cSize'), slide('centerSize', '芯径', 'cCenterSize'),
       stepNum('rot', '回', 'cRot', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial" fill-rule="evenodd"/></svg>'),
+      stepNum('spin', '転', 'cSpin', '<svg viewBox="-50 -50 100 100" aria-hidden="true"><path id="dial-spin" fill-rule="evenodd"/></svg>'),
+      slide('tail', '尾', 'cTail'), slide('reach', '広', 'cReach'),
       stepNum('dy', '下', 'cDy'), stepNum('aspect', '伸', 'cAspect'), stepNum('lobes', '弁', 'cLobes'),
       `<div class="actions"><button type="button" class="primary" id="ws-draw">${t('draw')}</button><button type="button" id="ws-guides" aria-pressed="false">${t('guides')}</button><button type="button" id="ws-random">${t('surprise')}</button><button type="button" id="ws-download">${t('download')}</button></div>`,
     ].join('');
@@ -507,8 +511,9 @@ const ws = (() => {
     };
   }
   renderControls();
-  const STEPS = { rot: [15, 0, 180], aspect: [0.05, 0.4, 1.6], dy: [0.02, -0.4, 0.4], lobes: [1, 4, 8] };
-  const nearest = (vals, v) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
+  const STEPS = { rot: [15, 0, 180], spin: [15, 0, 345], aspect: [0.05, 0.4, 1.6], dy: [0.02, -0.4, 0.4], lobes: [1, 4, 8] };
+  // an unset value counts as 0 (the tomoe's reach: 0 = the head's own outer edge)
+  const nearest = (vals, v = 0) => vals.reduce((bi, x, i) => (Math.abs(x - v) < Math.abs(vals[bi] - v) ? i : bi), 0);
   // a brush stroke: a blunt round start that tapers to a point with a small lift
   const stroke = (len) => { const L = Math.max(len, 8); return `M5 7.5Q${f1(L * 0.45)} 5.5 ${f1(L)} 10.5Q${f1(L * 0.5)} 17.5 5 16.5A4.5 4.5 0 0 1 5 7.5Z`; };
   const off = (k) => sliderOff[k] && sliderOff[k]();
@@ -517,10 +522,11 @@ const ws = (() => {
   root.addEventListener('click', (e) => {
     const pick = e.target.closest('[data-pick] button');
     if (pick) {
-      const k = pick.parentElement.dataset.pick, v = pick.dataset.v, next = { ...spec, [k]: k === 'overlay' && spec.overlay === v ? 'none' : v };
+      const k = pick.parentElement.dataset.pick, v = pick.dataset.v === 'true' ? true : pick.dataset.v === 'false' ? false : pick.dataset.v;
+      const next = { ...spec, [k]: k === 'overlay' && spec.overlay === v ? 'none' : v };
       // settings tuned for one historical crest don't carry over to a different enclosure or motif
       if (k === 'enclosure') for (const x of ['ringW', 'innerRing', 'clip', 'mokkoFill', 'lobeR', 'holeR']) delete next[x];
-      if (k === 'motif') for (const x of ['spin', 'centerSpin']) delete next[x];
+      if (k === 'motif') for (const x of ['spin', 'centerSpin', 'reach']) delete next[x];
       return set(next);
     }
     const st = e.target.closest('[data-step-key]');
@@ -553,23 +559,24 @@ const ws = (() => {
   root.addEventListener('pointercancel', drop);
 
   function sync() {
-    root.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', spec[p.dataset.pick] === b.dataset.v)));
+    root.querySelectorAll('[data-pick]').forEach((p) => p.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(spec[p.dataset.pick]) === b.dataset.v)));
     root.querySelectorAll('.brush').forEach((sl) => {
       const k = sl.dataset.key, vals = LADDERS[k], i = nearest(vals, spec[k]), len = ((i + 1) / vals.length) * 180, o = off(k);
-      sl.setAttribute('aria-valuenow', spec[k]); sl.setAttribute('aria-valuemin', vals[0]); sl.setAttribute('aria-valuemax', vals[vals.length - 1]);
+      sl.setAttribute('aria-valuenow', spec[k] ?? 0); sl.setAttribute('aria-valuemin', vals[0]); sl.setAttribute('aria-valuemax', vals[vals.length - 1]);
       sl.setAttribute('aria-disabled', !!o); sl.tabIndex = o ? -1 : 0;
       $('.track', sl).setAttribute('d', stroke(180));
       $('.ink', sl).setAttribute('d', stroke(len - 4));
       $('.drop', sl).setAttribute('cx', f1(Math.min(len + 1, 178)));
     });
     const ring = spec.layout === 'ring', grid = spec.layout === 'grid';
-    const show = { n: ring, rows: grid, cols: grid, center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko' };
+    const show = { n: ring, rows: grid, cols: grid, center: ring, rot: ring || spec.layout === 'single', aspect: ['hishi', 'uroko', 'kikyo', 'karahana', 'aoi', 'katabami'].includes(spec.motif), lobes: spec.enclosure === 'mokko', spin: ring, tail: spec.motif === 'tomoe', reach: spec.motif === 'tomoe', flip: spec.motif === 'tomoe' };
     root.querySelectorAll('[data-for]').forEach((el) => { if (el.dataset.for in show) el.hidden = !show[el.dataset.for]; });
     root.querySelectorAll('[data-out]').forEach((o) => {
       const k = o.dataset.out;
-      o.textContent = off(k) ? (k === 'r' || spec.layout !== 'ring' ? t('ringOnly') : t('pickCentre')) : k === 'rot' ? `${spec.rot}°` : ['n', 'rows', 'cols', 'lobes'].includes(k) ? String(spec[k]) : (+spec[k]).toFixed(2);
+      o.textContent = off(k) ? (k === 'r' || spec.layout !== 'ring' ? t('ringOnly') : t('pickCentre')) : k === 'rot' || k === 'spin' ? `${spec[k]}°` : ['n', 'rows', 'cols', 'lobes'].includes(k) ? String(spec[k]) : (+(spec[k] ?? 0)).toFixed(2);
     });
     $('#dial').setAttribute('d', RING + spoke((spec.rot - 90) * Math.PI / 180, 0, 36, 8));
+    $('#dial-spin').setAttribute('d', RING + spoke((spec.spin - 90) * Math.PI / 180, 0, 36, 8));
     $('#ws-guides').setAttribute('aria-pressed', guides);
   }
 

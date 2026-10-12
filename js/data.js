@@ -230,7 +230,8 @@ export const CLANS = [
     key: 'kobayakawa', house: '小早川', houseEn: 'Kobayakawa', lord: 'Kobayakawa Hideaki', province: 'Chikuzen',
     mon: '左三つ巴', monEn: 'Hidari mitsudomoe', gloss: 'Three swirls turning left',
     motif: 'geometric', side: 'switched',
-    note: 'Hideaki held Mount Matsuo with 15,000 men for the West. At midday he changed sides and charged the Ōtani lines, deciding the battle. He died two years later without an heir. It mirrors the Shingon swirl.',
+    fit: 0.937, recipe: { enclosure: 'none', layout: 'ring', motif: 'tomoe', n: 3, r: 0.542, size: 0.893, reach: 1.008, tail: 1.099, flip: true, rot: -1.5, center: 'none', style: 'hinata' },
+    note: 'Hideaki held Mount Matsuo with 15,000 men for the West. At midday he changed sides and charged the Ōtani lines, deciding the battle. He died two years later without an heir.',
   },
   {
     key: 'ukita', house: '宇喜多', houseEn: 'Ukita', lord: 'Ukita Hideie', province: 'Bizen',
@@ -315,9 +316,10 @@ export const CLANS = [
   // ---- Buddhist sects ----
   {
     key: 'shingon', kind: 'buddhist', house: '真言宗', houseEn: 'Shingon', lord: 'Kūkai', province: 'Kōyasan Kongōbu-ji',
-    mon: '三つ巴', monEn: 'Mitsudomoe', gloss: 'Three swirls turning right',
+    mon: '三つ巴', monEn: 'Mitsudomoe', gloss: 'Three swirls',
     motif: 'geometric', side: 'none',
-    note: 'Kūkai brought esoteric Buddhism back from China in 806 and founded the temples on Mount Kōya. The sect uses both the three swirls and the 5-3 paulownia. Compare the Kobayakawa swirl, its mirror image.',
+    fit: 0.973, recipe: { enclosure: 'none', layout: 'ring', motif: 'tomoe', n: 3, r: 0.555, size: 0.891, reach: 0.995, tail: 0.669, flip: true, rot: -0.25, center: 'none', style: 'hinata' },
+    note: 'Kūkai brought esoteric Buddhism back from China in 806 and founded the temples on Mount Kōya. The sect uses both the three swirls and the 5-3 paulownia. Which way counts as “left” in a tomoe is disputed (tails or heads?), and this drawing turns the same way as Kobayakawa’s “left” swirl.',
   },
   {
     key: 'soto', kind: 'buddhist', house: '曹洞宗', houseEn: 'Sōtō Zen', lord: 'Dōgen', province: 'Eihei-ji, Sōji-ji',
